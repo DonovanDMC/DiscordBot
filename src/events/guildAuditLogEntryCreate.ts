@@ -178,7 +178,7 @@ function formatMemberRoleChange(change: RoleAuditLogChange) {
 }
 
 function formatTimeoutChange(change: StandardAuditLogChange) {
-    if (change.new_value === null) {
+    if ("old_value" in change) {
         return "Timeout removed";
     } else {
         const d = new Date(change.new_value as string);
