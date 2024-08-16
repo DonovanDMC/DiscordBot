@@ -1,0 +1,8 @@
+services:
+  discordbot:
+    restart: always
+    build: .
+    network_mode: host
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env

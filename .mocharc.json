@@ -1,0 +1,10 @@
+{
+  "node-option": [
+    "no-warnings",
+    "no-deprecation",
+    "experimental-specifier-resolution=node",
+    "loader=ts-node/esm/transpile-only"
+  ],
+  "timeout": 20000,
+  "spec": "test/*.ts"
+}

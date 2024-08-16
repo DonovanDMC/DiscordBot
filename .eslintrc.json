@@ -1,0 +1,9 @@
+{
+  "extends": ["@uwu-codes/eslint-config/esm"],
+  "rules": {
+    // the imports are resolving just fun, but this plugin continues to complain
+    "import/no-unresolved": "off",
+    "unicorn/prefer-ternary": "off",
+    "unicorn/prevent-abbreviations": "off"
+  }
+}
