@@ -18,13 +18,13 @@ export interface DBMessage {
     stickers: string;
 }
 export interface FormattedMessage {
-    attachments: Array<JSONAttachment>;
+    attachments: Array<Pick<JSONAttachment, "url" | "filename" | "id">>;
     authorID: string;
     authorName: string;
     channelID: string;
     content: string;
     id: string;
-    stickers: Array<StickerItem>;
+    stickers: Array<Pick<StickerItem, "id" | "name">>;
 }
 
 const path = new URL("../../data", import.meta.url).pathname;
@@ -61,15 +61,18 @@ export async function getMessage(id: string) {
     if (!msg) {
         return null;
     }
+    // the previous implementation stored each differently
+    const legacy = !(msg.attachments.startsWith("[") || msg.stickers.startsWith("["));
 
     return {
-        attachments: JSON.parse(msg.attachments) as Array<JSONAttachment>,
+        // for legacy we supply filename as the id for comparisons
+        attachments: legacy ? msg.attachments.split("$").map(attachment => ({ url: "https://e621.net", filename: attachment, id: attachment })) : JSON.parse(msg.attachments) as Array<JSONAttachment>,
         authorID:    msg.author_id,
         authorName:  msg.author_name,
         channelID:   msg.channel_id,
         content:     msg.content,
         id:          msg.id,
-        stickers:    JSON.parse(msg.stickers) as Array<StickerItem>
+        stickers:    legacy ? msg.stickers.split("$").map(sticker => ({ id: sticker.split(":")[1] ?? "0", name: sticker.split(":")[0] })) : JSON.parse(msg.stickers) as Array<StickerItem>
     };
 }
 
