@@ -30,7 +30,7 @@ export async function ticketUpdate(data: TicketActionData) {
         Post:    () => `Post uploaded by ${data.ticket.target}`,
         Set:     () => `Set ${data.ticket.target}`,
         Tag:     () => `Tag ${data.ticket.target}`,
-        User:    () => `User report for ${data.ticket.target}`,
+        User:    () => `User ${data.ticket.target}`,
         Wiki:    () => `Wiki page ${data.ticket.target}`
     }[data.ticket.category] || (() => `${data.ticket.category} report by ${data.ticket.user}`))();
     const embed = {

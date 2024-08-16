@@ -5,13 +5,15 @@ import { idToName, normalizeName } from "../util/util.js";
 import { getAll } from "../util/userFetcher.js";
 import Logger from "@uwu-codes/logger";
 import {
+    type AutocompleteInteraction,
     MessageFlags,
     User,
     type AllowedMentions,
     type AnyInteractionChannel,
     type ApplicationCommandTypes,
     type CommandInteraction,
-    type Uncached
+    type Uncached,
+    type AnyTextableGuildChannel
 } from "oceanic.js";
 
 export default new ClientEvent("interactionCreate", async function(interaction) {
@@ -28,7 +30,22 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
             }
         }
     }
+
+    if (interaction.isAutocompleteInteraction() && interaction.inCachedGuildChannel()) {
+        const [subcommand] = interaction.data.options.getSubCommand() ?? [];
+        if (interaction.data.name === "phrases" && subcommand === "role") {
+            return roleAutocomplete(interaction);
+        }
+    }
 });
+
+async function roleAutocomplete(interaction: AutocompleteInteraction<AnyTextableGuildChannel>) {
+    const roles = config.phraseRoles.map(id => interaction.guild.roles.get(id) ?? { id, name: id });
+    return interaction.result(roles.map (r => ({
+        name:  r.name,
+        value: r.id
+    })));
+}
 
 type ChatInputApplicationCommandInteraction =  CommandInteraction<AnyInteractionChannel | Uncached, ApplicationCommandTypes.CHAT_INPUT>;
 
@@ -37,8 +54,8 @@ async function phrasesCommand(interaction: ChatInputApplicationCommandInteractio
 
     switch (subcommand) {
         case "role": {
-            const role = Object.entries(config.roles).find(([name]) => name === interaction.data.options.getString("role", true))?.[1];
-            if (role === undefined) {
+            const role = interaction.data.options.getString("role", true);
+            if (!config.phraseRoles.includes(role)) {
                 return interaction.reply({ content: "I couldn't find that role." });
             }
             switch (subcommandGroup) {
@@ -86,7 +103,7 @@ async function phrasesCommand(interaction: ChatInputApplicationCommandInteractio
 
 async function addPhraseCommand(interaction: ChatInputApplicationCommandInteraction, mention: string, phrase: string) {
     await addPhrase(mention, phrase);
-    const role = (mention.startsWith("&") && Object.entries(config.roles).find(([,id]) => id === mention.slice(1))?.[0]) || null;
+    const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))?.[0]) || null;
     if (role) {
         return interaction.reply({ content: `The phrase "${phrase}" has been added to the ${role.replaceAll("_", " ")} notification list.` });
     } else {
@@ -96,7 +113,7 @@ async function addPhraseCommand(interaction: ChatInputApplicationCommandInteract
 
 async function removePhraseCommand(interaction: ChatInputApplicationCommandInteraction, mention: string, phrase: string) {
     await removePhrase(mention, phrase);
-    const role = (mention.startsWith("&") && Object.entries(config.roles).find(([,id]) => id === mention.slice(1))?.[0]) || null;
+    const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))?.[0]) || null;
     if (role) {
         return interaction.reply({ content: `The phrase "${phrase}" has been removed from the ${role.replaceAll("_", " ")} notification list.` });
     } else {

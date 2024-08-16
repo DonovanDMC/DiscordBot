@@ -41,6 +41,7 @@
     "ioredis": "^5.4.1",
     "oceanic.js": "^1.11.1",
     "promised-sqlite3": "^2.1.0",
+    "source-map-support": "^0.5.21",
     "sqlite3": "^5.1.7"
   },
   "type": "module"

@@ -18,7 +18,7 @@ interface DBMessage {
     stickers: string;
 }
 
-const path = new URL("../data", import.meta.url).pathname;
+const path = new URL("../../data", import.meta.url).pathname;
 const db = await AsyncDatabase.open(`${path}/messages.db`);
 const init = await readFile(`${path}/init.sql`, "utf8");
 await db.run(init);
@@ -35,7 +35,7 @@ export function formatMessage(msg: Message | JSONMessage) {
     };
 }
 
-const upsertQuery = await db.prepare("INSERT INTO messages (id, author_id, author_name, channel_id, attachments, stickers, content) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET author_id = ?, author_name = ?, channel_id = ?, attachments = ?, stickers = ?, content = ?");
+const upsertQuery = await db.prepare("INSERT INTO messages (id, author_id, author_name, channel_id, attachments, stickers, content) VALUES (?, ?, ?, ?, ?, ?, ?)");
 export async function saveMessage(message: Message) {
     return upsertQuery.run([
         message.id,
@@ -43,7 +43,7 @@ export async function saveMessage(message: Message) {
         message.author.username,
         message.channelID,
         JSON.stringify(message.attachments.map(a => a.toJSON())),
-        JSON.stringify(message.stickerItems),
+        JSON.stringify(message.stickerItems ?? []),
         message.content
     ]);
 }

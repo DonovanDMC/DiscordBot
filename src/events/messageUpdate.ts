@@ -16,12 +16,12 @@ export default new ClientEvent("messageUpdate", async function(msg, oldMessage) 
         old = await getMessage(msg.id);
     }
 
-    await saveMessage(msg);
     if (old) {
         if (msg.content === old.content && JSON.stringify(msg.attachments.toArray()) === JSON.stringify(old.attachments)) {
             return;
         }
 
+        await saveMessage(msg);
         if (msg.inCachedGuildChannel()) {
             await handleLinks(msg);
         }
@@ -53,5 +53,7 @@ export default new ClientEvent("messageUpdate", async function(msg, oldMessage) 
         await this.rest.channels.createMessage(config.channels.event, {
             embeds: embed.toJSON(true)
         });
+    } else {
+        await saveMessage(msg);
     }
 });

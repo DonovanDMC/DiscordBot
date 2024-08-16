@@ -1,4 +1,5 @@
 import config from "../config.js";
+import Logger from "@uwu-codes/logger";
 import { createHmac } from "node:crypto";
 
 const e6ToDiscordURL = `${config.fetchURL}/e6ids`;
@@ -11,7 +12,7 @@ function getFetchHMAC(contents: string) {
 export async function discordToE6(id: string) {
     const res = await fetch(`${e6ToDiscordURL}?discord_id=${id}&hash=${getFetchHMAC(id)}`);
     if (!res.ok) {
-        console.error(`Failed to fetch Discord to e6 for ${id}: ${res.status} ${res.statusText}`);
+        Logger.getLogger("discordToE6").error(`Failed to fetch ${id}: ${res.status} ${res.statusText}`);
         return [];
     }
 
@@ -21,7 +22,7 @@ export async function discordToE6(id: string) {
 export async function e6ToDiscord(id: number) {
     const res = await fetch(`${discordToE6URL}?user_id=${id}&hash=${getFetchHMAC(id.toString())}`);
     if (!res.ok) {
-        console.error(`Failed to fetch e6 to Discord for ${id}: ${res.status} ${res.statusText}`);
+        Logger.getLogger("e6ToDiscord").error(`Failed to fetch ${id}: ${res.status} ${res.statusText}`);
         return [];
     }
 

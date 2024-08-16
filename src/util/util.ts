@@ -1,4 +1,5 @@
 import config from "../config.js";
+import pkg from "../../package.json" assert { type: "json" };
 import { Message } from "oceanic.js";
 import Logger from "@uwu-codes/logger";
 
@@ -6,7 +7,7 @@ export const ucwords = (str: string) => str.replaceAll(/\b\w/g, char => char.toU
 export const normalizeName = (str: string) => str.replaceAll("_", " ");
 
 export async function idToName(...ids: Array<number>) {
-    const data = await fetch(`${config.fetchURL}/users.json?search[id]=${ids.join(",")}`)
+    const data = await fetch(`${config.baseURL}/users.json?search[id]=${ids.join(",")}`)
         .then(async r => r.json() as Promise<Array<{ id: number; name: string; }>>)
         .catch(err => {
             Logger.getLogger("idToName").error(err);
@@ -33,21 +34,29 @@ export const wikiLinkRegex = /\[\[([\S ]+?)]]/gi;
 export const postSearchRegex = /{{([\S ]+?)}}/gi;
 
 export async function getPost(id: number) {
-    return fetch(`${config.fetchURL}/posts/${id}.json`)
-        .then(r => r.json() as Promise<{ id: number; rating: "s" | "q" | "e"; tags: Record<string, Array<string>>; }>)
-        .then(data => ({ rating: data.rating, tags: Object.entries(data.tags).flatMap(t => t[1]) }))
-        .catch(err => {
-            Logger.getLogger("getPost").error(err);
-            return { id: null, rating: "s", tags: [] };
-        });
+    const res = await fetch(`${config.baseURL}/posts/${id}.json`, {
+        headers: {
+            "User-Agent": `DiscordBot/${pkg.version} (${pkg.repository.url})`
+        }
+    });
+    if (!res.ok) {
+        Logger.getLogger("getPost").error(`Failed to fetch ${id}: ${res.status} ${res.statusText}`);
+        return { id: null, rating: "s", tags: [] };
+    }
+    const data = await res.json() as { post: { id: number; rating: "s" | "q" | "e"; tags: Record<string, Array<string>>; }; };
+    return { id: data.post.id, rating: data.post.rating, tags: Object.entries(data.post.tags).flatMap(t => t[1]) };
 }
 
 export async function getPostByMD5(md5: string) {
-    return fetch(`${config.fetchURL}/posts.json?md5=${md5}`)
-        .then(r => r.json() as Promise<Array<{ id: number; rating: "s" | "q" | "e"; tags: Record<string, Array<string>>; }>>)
-        .then(([data]) => ({ id: data.id, rating: data.rating, tags: Object.entries(data.tags).flatMap(t => t[1]) }))
-        .catch(err => {
-            Logger.getLogger("getPost").error(err);
-            return { id: null, rating: "s", tags: [] };
-        });
+    const res = await fetch(`${config.baseURL}/posts.json?md5=${md5}`, {
+        headers: {
+            "User-Agent": `DiscordBot/${pkg.version} (${pkg.repository.url})`
+        }
+    });
+    if (!res.ok) {
+        Logger.getLogger("getPostByMD5").error(`Failed to fetch ${md5}: ${res.status} ${res.statusText}`);
+        return { id: null, rating: "s", tags: [] };
+    }
+    const data = await res.json() as { post: { id: number; rating: "s" | "q" | "e"; tags: Record<string, Array<string>>; }; };
+    return { id: data.post.id, rating: data.post.rating, tags: Object.entries(data.post.tags).flatMap(t => t[1]) };
 }

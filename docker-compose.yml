@@ -3,6 +3,7 @@ services:
     restart: always
     build: .
     network_mode: host
+    init: true
     volumes:
       - ./data:/app/data
       - ./.env:/app/.env

@@ -28,10 +28,10 @@ const config = {
     baseURL:                env("BASE_URL", true),
     fetchURL:               env("FETCH_URL", true),
     fetchSecret:            env("FETCH_SECRET", true),
-    joinerURL:              env("JOINER_URL", true),
     blacklistedTags:        env("BLACKLISTED_TAGS")?.split(",") || [],
     blacklistedNonSafeTags: env("BLACKLISTED_NON_SAFE_TAGS")?.split(",") || [],
     staffCategories:        env("STAFF_CATEGORIES")?.split(",") || [],
-    safeChannels:           env("SAFE_CHANNELS")?.split(",") || []
+    safeChannels:           env("SAFE_CHANNELS")?.split(",") || [],
+    phraseRoles:            env("PHRASE_ROLES")?.split(",") || []
 };
 export default config;

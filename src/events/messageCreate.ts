@@ -12,5 +12,4 @@ export default new ClientEvent("messageCreate", async function(msg) {
     if (msg.inCachedGuildChannel()) {
         await handleLinks(msg);
     }
-
 });

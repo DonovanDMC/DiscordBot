@@ -29,11 +29,11 @@ const commands: Array<CreateGuildApplicationCommandOptions> = [
                         description: "Add a role notification phrase.",
                         options:     [
                             {
-                                type:        ApplicationCommandOptionTypes.STRING,
-                                name:        "role",
-                                description: "The role to add the phrase to.",
-                                required:    true,
-                                choices:     Object.keys(config.roles).map(r => ({ name: r, value: r }))
+                                type:         ApplicationCommandOptionTypes.STRING,
+                                name:         "role",
+                                description:  "The role to add the phrase to.",
+                                required:     true,
+                                autocomplete: true
                             },
                             {
                                 type:        ApplicationCommandOptionTypes.STRING,
@@ -51,11 +51,11 @@ const commands: Array<CreateGuildApplicationCommandOptions> = [
                         description: "Remove a role notification phrase.",
                         options:     [
                             {
-                                type:        ApplicationCommandOptionTypes.STRING,
-                                name:        "role",
-                                description: "The role to remove the phrase from.",
-                                required:    true,
-                                choices:     Object.keys(config.roles).map(r => ({ name: r, value: r }))
+                                type:         ApplicationCommandOptionTypes.STRING,
+                                name:         "role",
+                                description:  "The role to remove the phrase from.",
+                                required:     true,
+                                autocomplete: true
                             },
                             {
                                 type:        ApplicationCommandOptionTypes.STRING,
@@ -73,11 +73,11 @@ const commands: Array<CreateGuildApplicationCommandOptions> = [
                         description: "Get a list of the currently registered role phrases.",
                         options:     [
                             {
-                                type:        ApplicationCommandOptionTypes.STRING,
-                                name:        "role",
-                                description: "The role to remove the phrase from. Select none to list all.",
-                                required:    false,
-                                choices:     Object.keys(config.roles).map(r => ({ name: r, value: r }))
+                                type:         ApplicationCommandOptionTypes.STRING,
+                                name:         "role",
+                                description:  "The role to remove the phrase from. Select none to list all.",
+                                required:     false,
+                                autocomplete: true
                             }
                         ]
                     }
