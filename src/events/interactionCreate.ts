@@ -62,134 +62,6 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
     }
 });
 
-async function submitTicket(interaction: ModalSubmitInteraction<AnyTextableGuildChannel>) {
-    await Redis.setex(`ticket-timeout:${interaction.user.id}`, 60 * 60 * 24, "1");
-    await interaction.defer(MessageFlags.EPHEMERAL);
-
-    const message = interaction.data.components.getTextInput("ticket-message", true);
-
-    let channel: PrivateThreadChannel;
-    try {
-        channel = await interaction.client.rest.channels.startThreadWithoutMessage<PrivateThreadChannel>(interaction.channel.id, {
-            type:      ChannelTypes.PRIVATE_THREAD,
-            name:      `${interaction.member.tag}'s Ticket`,
-            invitable: false
-        });
-    } catch (err) {
-        Logger.getLogger("SubmitTicket").error("Failed to create ticket thread:");
-        Logger.getLogger("SubmitTicket").error(err);
-        await Redis.del(`ticket-timeout:${interaction.user.id}`);
-        return interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
-    }
-
-    try {
-        await channel.createMessage({
-            content:    `${interaction.member.mention} feel free to direct your questions at any <@&${config.roles.privateHelpHelper}>. Only you and staff members can see this channel.\n\n**Reason for contact:**\n${message}`,
-            components: [
-                {
-                    type:       ComponentTypes.ACTION_ROW,
-                    components: [
-                        {
-                            type:     ComponentTypes.BUTTON,
-                            customID: "close-ticket",
-                            label:    "Click here if you no longer need help",
-                            style:    ButtonStyles.DANGER
-                        }
-                    ]
-                }
-            ],
-            flags: MessageFlags.EPHEMERAL
-        });
-    } catch (err) {
-        Logger.getLogger("SubmitTicket").error("Failed to create ticket message:");
-        Logger.getLogger("SubmitTicket").error(err);
-        try {
-            await channel.addMember(interaction.user.id);
-        } catch (err2) {
-            Logger.getLogger("SubmitTicket").error("Failed to add user to thread:");
-            Logger.getLogger("SubmitTicket").error(err2);
-            await Redis.del(`ticket-timeout:${interaction.user.id}`);
-            return interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
-        }
-    }
-
-    return interaction.reply({ content: `Your ticket has been created: ${channel.mention}`, flags: MessageFlags.EPHEMERAL });
-}
-
-// To create initial thread creation message:
-// curl -X POST -H "Authorization: Bot [TOKEN]" -H "Content-Type: application/json" --data-raw '{"content":"[MESSAGE CONTENT]","components":[{"type":1,"components":[{"type":2,"style":1,"label":"[BUTTON TEXT]","custom_id":"open-ticket"}]}]}' https://discord.com/api/v10/channels/[CHANNEL]/messages
-// Replace:
-// * [TOKEN] - The bot client's token
-// * [MESSAGE CONTENT] - The content to be shown with the message. This can be removed entirely
-// * [BUTTON TEXT] - The text to show on the button
-// * [CHANNEL] - The id of the channel to send the message to
-// You can also change the color of the button by changing `style` to 2, 3, or 4.
-// See: https://discord.com/developers/docs/interactions/message-components#button-object-button-styles
-async function openTicket(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
-    const timeout = await Redis.get(`ticket-timeout:${interaction.user.id}`);
-    if (timeout) {
-        return interaction.reply({ content: "You can only create one ticket per day.", flags: MessageFlags.EPHEMERAL });
-    }
-
-    return interaction.createModal({
-        customID:   "open-ticket-modal",
-        title:      "Get in contact",
-        components: [
-            {
-                type:       ComponentTypes.ACTION_ROW,
-                components: [
-                    {
-                        type:        ComponentTypes.TEXT_INPUT,
-                        customID:    "ticket-message",
-                        label:       "What is the subject of your ticket?",
-                        style:       TextInputStyles.PARAGRAPH,
-                        placeholder: "Please be as thorough as possible.",
-                        required:    true,
-                        maxLength:   1500,
-                        minLength:   10
-                    }
-                ]
-            }
-        ]
-    });
-}
-
-async function closeTicket(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
-    if (interaction.channel.type !== ChannelTypes.PRIVATE_THREAD) {
-        Logger.getLogger("CloseTicket").warn("Attempted to close a ticket in a non-thread channel.");
-        return interaction.reply({ content: "Whoops. Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
-    }
-
-    await interaction.defer(MessageFlags.EPHEMERAL);
-    try {
-        await interaction.channel.createMessage({
-            content:         `This ticket has been closed by ${interaction.user.mention}`,
-            allowedMentions: { users: false }
-        });
-    } catch (err) {
-        Logger.getLogger("CloseTicket").error("Failed to create closing message for ticket:");
-        Logger.getLogger("CloseTicket").error(err);
-        return interaction.reply({ content: "Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
-    }
-
-    await interaction.reply({ content: "Ticket closed.", flags: MessageFlags.EPHEMERAL });
-    try {
-        await interaction.channel.edit({ archived: true, locked: true });
-    } catch (err) {
-        Logger.getLogger("CloseTicket").error("Failed to close ticket:");
-        Logger.getLogger("CloseTicket").error(err);
-        return interaction.reply({ content: "Something failed. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
-    }
-}
-
-async function roleAutocomplete(interaction: AutocompleteInteraction<AnyTextableGuildChannel>) {
-    const roles = config.phraseRoles.map(id => interaction.guild.roles.get(id) ?? { id, name: id });
-    return interaction.result(roles.map (r => ({
-        name:  r.name,
-        value: r.id
-    })));
-}
-
 type ChatInputApplicationCommandInteraction =  CommandInteraction<AnyInteractionChannel | Uncached, ApplicationCommandTypes.CHAT_INPUT>;
 
 async function phrasesCommand(interaction: ChatInputApplicationCommandInteraction) {
@@ -375,4 +247,133 @@ async function syncCommand(interaction: CommandInteraction) {
                 flags:   MessageFlags.EPHEMERAL
             });
         });
+}
+
+async function roleAutocomplete(interaction: AutocompleteInteraction<AnyTextableGuildChannel>) {
+    const roles = config.phraseRoles.map(id => interaction.guild.roles.get(id) ?? { id, name: id });
+    return interaction.result(roles.map (r => ({
+        name:  r.name,
+        value: r.id
+    })));
+}
+
+// To create initial thread creation message:
+// curl -X POST -H "Authorization: Bot [TOKEN]" -H "Content-Type: application/json" --data-raw '{"content":"[MESSAGE CONTENT]","components":[{"type":1,"components":[{"type":2,"style":1,"label":"[BUTTON TEXT]","custom_id":"open-ticket"}]}]}' https://discord.com/api/v10/channels/[CHANNEL]/messages
+// Replace:
+// * [TOKEN] - The bot client's token
+// * [MESSAGE CONTENT] - The content to be shown with the message. This can be removed entirely
+// * [BUTTON TEXT] - The text to show on the button
+// * [CHANNEL] - The id of the channel to send the message to
+// You can also change the color of the button by changing `style` to 2, 3, or 4.
+// See: https://discord.com/developers/docs/interactions/message-components#button-object-button-styles
+async function openTicket(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
+    const timeout = await Redis.get(`ticket-timeout:${interaction.user.id}`);
+    if (timeout) {
+        return interaction.reply({ content: "You can only create one ticket per day.", flags: MessageFlags.EPHEMERAL });
+    }
+
+    return interaction.createModal({
+        customID:   "open-ticket-modal",
+        title:      "Get in contact",
+        components: [
+            {
+                type:       ComponentTypes.ACTION_ROW,
+                components: [
+                    {
+                        type:        ComponentTypes.TEXT_INPUT,
+                        customID:    "ticket-message",
+                        label:       "What is the subject of your ticket?",
+                        style:       TextInputStyles.PARAGRAPH,
+                        placeholder: "Please be as thorough as possible.",
+                        required:    true,
+                        maxLength:   1500,
+                        minLength:   10
+                    }
+                ]
+            }
+        ]
+    });
+}
+
+async function closeTicket(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
+    if (interaction.channel.type !== ChannelTypes.PRIVATE_THREAD) {
+        Logger.getLogger("CloseTicket").warn("Attempted to close a ticket in a non-thread channel.");
+        return interaction.reply({ content: "Whoops. Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+    }
+
+    await interaction.defer(MessageFlags.EPHEMERAL);
+    try {
+        await interaction.channel.createMessage({
+            content:         `This ticket has been closed by ${interaction.user.mention}`,
+            allowedMentions: { users: false }
+        });
+    } catch (err) {
+        Logger.getLogger("CloseTicket").error("Failed to create closing message for ticket:");
+        Logger.getLogger("CloseTicket").error(err);
+        return interaction.reply({ content: "Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+    }
+
+    await interaction.reply({ content: "Ticket closed.", flags: MessageFlags.EPHEMERAL });
+    try {
+        await interaction.channel.edit({ archived: true, locked: true });
+    } catch (err) {
+        Logger.getLogger("CloseTicket").error("Failed to close ticket:");
+        Logger.getLogger("CloseTicket").error(err);
+        return interaction.reply({ content: "Something failed. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+    }
+}
+
+
+async function submitTicket(interaction: ModalSubmitInteraction<AnyTextableGuildChannel>) {
+    await Redis.setex(`ticket-timeout:${interaction.user.id}`, 60 * 60 * 24, "1");
+    await interaction.defer(MessageFlags.EPHEMERAL);
+
+    const message = interaction.data.components.getTextInput("ticket-message", true);
+
+    let channel: PrivateThreadChannel;
+    try {
+        channel = await interaction.client.rest.channels.startThreadWithoutMessage<PrivateThreadChannel>(interaction.channel.id, {
+            type:      ChannelTypes.PRIVATE_THREAD,
+            name:      `${interaction.member.tag}'s Ticket`,
+            invitable: false
+        });
+    } catch (err) {
+        Logger.getLogger("SubmitTicket").error("Failed to create ticket thread:");
+        Logger.getLogger("SubmitTicket").error(err);
+        await Redis.del(`ticket-timeout:${interaction.user.id}`);
+        return interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+    }
+
+    try {
+        await channel.createMessage({
+            content:    `${interaction.member.mention} feel free to direct your questions at any <@&${config.roles.privateHelpHelper}>. Only you and staff members can see this channel.\n\n**Reason for contact:**\n${message}`,
+            components: [
+                {
+                    type:       ComponentTypes.ACTION_ROW,
+                    components: [
+                        {
+                            type:     ComponentTypes.BUTTON,
+                            customID: "close-ticket",
+                            label:    "Click here if you no longer need help",
+                            style:    ButtonStyles.DANGER
+                        }
+                    ]
+                }
+            ],
+            flags: MessageFlags.EPHEMERAL
+        });
+    } catch (err) {
+        Logger.getLogger("SubmitTicket").error("Failed to create ticket message:");
+        Logger.getLogger("SubmitTicket").error(err);
+        try {
+            await channel.addMember(interaction.user.id);
+        } catch (err2) {
+            Logger.getLogger("SubmitTicket").error("Failed to add user to thread:");
+            Logger.getLogger("SubmitTicket").error(err2);
+            await Redis.del(`ticket-timeout:${interaction.user.id}`);
+            return interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        }
+    }
+
+    return interaction.reply({ content: `Your ticket has been created: ${channel.mention}`, flags: MessageFlags.EPHEMERAL });
 }
