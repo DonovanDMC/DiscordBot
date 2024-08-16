@@ -8,7 +8,7 @@ import {
 } from "oceanic.js";
 import { readFile } from "node:fs/promises";
 
-interface DBMessage {
+export interface DBMessage {
     attachments: string;
     author_id: string;
     author_name: string;
@@ -17,13 +17,22 @@ interface DBMessage {
     id: string;
     stickers: string;
 }
+export interface FormattedMessage {
+    attachments: Array<JSONAttachment>;
+    authorID: string;
+    authorName: string;
+    channelID: string;
+    content: string;
+    id: string;
+    stickers: Array<StickerItem>;
+}
 
 const path = new URL("../../data", import.meta.url).pathname;
 const db = await AsyncDatabase.open(`${path}/messages.db`);
 const init = await readFile(`${path}/init.sql`, "utf8");
 await db.run(init);
 
-export function formatMessage(msg: Message | JSONMessage) {
+export function formatMessage(msg: Message | JSONMessage): FormattedMessage {
     return {
         attachments: msg.attachments.map(a => a instanceof Attachment ? a.toJSON() : a),
         authorID:    msg.author.id,

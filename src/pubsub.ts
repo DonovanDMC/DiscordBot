@@ -22,16 +22,19 @@ export async function ticketUpdate(data: TicketActionData) {
     const color = data.ticket.claimant === null ? 0xFF0000 : 0x00FFFF;
     const claimant = data.ticket.claimant || "<Unclaimed>";
     const offender = ({
-        Artist:  () => `Artist ${data.ticket.target}`,
-        Comment: () => `Comment by ${data.ticket.target}`,
-        Dmail:   () => `DMail sent by ${data.ticket.target}`,
-        Forum:   () => `Forum post by ${data.ticket.target}`,
-        Pool:    () => `Pool ${data.ticket.target}`,
-        Post:    () => `Post uploaded by ${data.ticket.target}`,
-        Set:     () => `Set ${data.ticket.target}`,
-        Tag:     () => `Tag ${data.ticket.target}`,
-        User:    () => `User ${data.ticket.target}`,
-        Wiki:    () => `Wiki page ${data.ticket.target}`
+        Artist:    () => `Artist ${data.ticket.target}`,
+        Comment:   () => `Comment by ${data.ticket.target}`,
+        Dmail:     () => `DMail sent by ${data.ticket.target}`,
+        Forum:     () => `Forum post by ${data.ticket.target}`,
+        ForumPost: () => `Forum post by ${data.ticket.target}`,
+        Pool:      () => `Pool ${data.ticket.target}`,
+        Post:      () => `Post uploaded by ${data.ticket.target}`,
+        Set:       () => `Set ${data.ticket.target}`,
+        PostSet:   () => `Set ${data.ticket.target}`,
+        Tag:       () => `Tag ${data.ticket.target}`,
+        User:      () => `User ${data.ticket.target}`,
+        Wiki:      () => `Wiki page ${data.ticket.target}`,
+        WikiPage:  () => `Wiki page ${data.ticket.target}`
     }[data.ticket.category] || (() => `${data.ticket.category} report by ${data.ticket.user}`))();
     const embed = {
         url:         `${config.baseURL}/tickets/${data.ticket.id}`,
