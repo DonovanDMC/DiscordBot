@@ -1,13 +1,12 @@
 import type DiscordBot from "./client.js";
-import config from "./config.js";
 import Redis from "./Redis.js";
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, type CreateGuildApplicationCommandOptions } from "oceanic.js";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, ApplicationIntegrationTypes, CreateApplicationCommandOptions, InteractionContextTypes } from "oceanic.js";
 
-export default async function registerCommands(client: DiscordBot, cachedCommands: Array<CreateGuildApplicationCommandOptions>) {
+export default async function registerCommands(client: DiscordBot, cachedCommands: Array<CreateApplicationCommandOptions>) {
     if (JSON.stringify(cachedCommands) === JSON.stringify(commands)) {
         return;
     }
-    const registered = await client.application.bulkEditGuildCommands(config.guildID, commands);
+    const registered = await client.application.bulkEditGlobalCommands(commands);
     await Redis.set("bot-commands", JSON.stringify(commands));
     for (const cmd of registered) {
         console.log(`Registered command ${cmd.name}: ${cmd.id}`);
@@ -15,7 +14,7 @@ export default async function registerCommands(client: DiscordBot, cachedCommand
 }
 
 const phraseMinLength = 2, phraseMaxLength = 32;
-const commands: Array<CreateGuildApplicationCommandOptions> = [
+const commands: Array<CreateApplicationCommandOptions> = [
     {
         type:        ApplicationCommandTypes.CHAT_INPUT,
         name:        "phrases",
@@ -133,7 +132,9 @@ const commands: Array<CreateGuildApplicationCommandOptions> = [
                 name:        "dump",
                 description: "List all registered phrases."
             }
-        ]
+        ],
+        contexts: [InteractionContextTypes.GUILD],
+        integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     },
     {
         type:        ApplicationCommandTypes.CHAT_INPUT,
@@ -146,11 +147,15 @@ const commands: Array<CreateGuildApplicationCommandOptions> = [
                 description: "The user. Their site id, discord id, or a mention.",
                 required:    true
             }
-        ]
+        ],
+        contexts: [InteractionContextTypes.GUILD],
+        integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     },
     {
         type: ApplicationCommandTypes.USER,
-        name: "Whois"
+        name: "Whois",
+        contexts: [InteractionContextTypes.GUILD],
+        integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     },
     {
         type:        ApplicationCommandTypes.CHAT_INPUT,
@@ -162,6 +167,8 @@ const commands: Array<CreateGuildApplicationCommandOptions> = [
                 name:        "user_id",
                 description: "If omitted, the first linked account will be used."
             }
-        ]
+        ],
+        contexts: [InteractionContextTypes.GUILD, InteractionContextTypes.BOT_DM],
+        integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     }
 ];

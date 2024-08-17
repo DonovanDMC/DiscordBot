@@ -25,21 +25,27 @@ import {
 } from "oceanic.js";
 
 export default new ClientEvent("interactionCreate", async function(interaction) {
-    if (interaction.isCommandInteraction()) {
-        if (interaction.isChatInputCommand()) {
-            switch (interaction.data.name) {
-                case "phrases": return phrasesCommand(interaction);
-                case "whois": return whoisCommand(interaction);
-                case "sync": return syncCommand(interaction);
-            }
-        } else {
-            switch (interaction.data.name) {
-                case "Whois": return whoisCommand(interaction);
-            }
+    if (interaction.isCommandInteraction() && interaction.isChatInputCommand() && interaction.inPrivateChannel()) {
+        switch (interaction.data.name) {
+            case "sync": return syncCommand(interaction);
         }
     }
 
     if (interaction.inCachedGuildChannel()) {
+        if (interaction.isCommandInteraction()) {
+            if (interaction.isChatInputCommand()) {
+                switch (interaction.data.name) {
+                    case "phrases": return phrasesCommand(interaction);
+                    case "whois": return whoisCommand(interaction);
+                    case "sync": return syncCommand(interaction);
+                }
+            } else {
+                switch (interaction.data.name) {
+                    case "Whois": return whoisCommand(interaction);
+                }
+            }
+        }
+
         if (interaction.isAutocompleteInteraction()) {
             const [subcommand] = interaction.data.options.getSubCommand() ?? [];
             if (interaction.data.name === "phrases" && subcommand === "role") {
@@ -62,9 +68,9 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
     }
 });
 
-type ChatInputApplicationCommandInteraction =  CommandInteraction<AnyInteractionChannel | Uncached, ApplicationCommandTypes.CHAT_INPUT>;
+type ChatInputApplicationCommandInteraction<T extends AnyInteractionChannel | Uncached = AnyInteractionChannel | Uncached> =  CommandInteraction<T, ApplicationCommandTypes.CHAT_INPUT>;
 
-async function phrasesCommand(interaction: ChatInputApplicationCommandInteraction) {
+async function phrasesCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>) {
     const [subcommand, subcommandGroup] = interaction.data.options.getSubCommand(true);
 
     switch (subcommand) {
@@ -116,7 +122,7 @@ async function phrasesCommand(interaction: ChatInputApplicationCommandInteractio
     }
 }
 
-async function addPhraseCommand(interaction: ChatInputApplicationCommandInteraction, mention: string, phrase: string) {
+async function addPhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string) {
     await addPhrase(mention, phrase);
     const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))?.[0]) || null;
     if (role) {
@@ -126,7 +132,7 @@ async function addPhraseCommand(interaction: ChatInputApplicationCommandInteract
     }
 }
 
-async function removePhraseCommand(interaction: ChatInputApplicationCommandInteraction, mention: string, phrase: string) {
+async function removePhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string) {
     await removePhrase(mention, phrase);
     const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))?.[0]) || null;
     if (role) {
@@ -136,7 +142,7 @@ async function removePhraseCommand(interaction: ChatInputApplicationCommandInter
     }
 }
 
-async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandInteraction, target?: string) {
+async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, target?: string) {
     const phrases = target === undefined ? await getAllPhrases() : await getPhrasesFor(target);
     const texts: Array<string> = [];
     let text = "";
@@ -168,8 +174,8 @@ async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandIntera
     }
 }
 
-async function whoisCommand(interaction: CommandInteraction) {
-    const flags = (interaction.channel as AnyTextableGuildChannel).parentID === null || !config.staffCategories.includes((interaction.channel as AnyTextableGuildChannel).parentID!) ? MessageFlags.EPHEMERAL : 0;
+async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChannel>) {
+    const flags = interaction.channel.parentID === null || !config.staffCategories.includes(interaction.channel.parentID) ? MessageFlags.EPHEMERAL : 0;
     await interaction.defer(flags);
     let id: string | number;
     // the getAll function expects a number if we're starting from a user id, and a string if we're starting
@@ -187,7 +193,7 @@ async function whoisCommand(interaction: CommandInteraction) {
     }
 
     if (!/^\d+$/.test(id)) {
-        const members = await interaction.guild!.searchMembers({ query: id });
+        const members = await interaction.guild.searchMembers({ query: id });
         if (members.length === 0) {
             return interaction.reply({
                 content: "I couldn't find that user.",
