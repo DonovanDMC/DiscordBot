@@ -1,12 +1,12 @@
 import config from "../config.js";
 import Logger from "@uwu-codes/logger";
-import { createHmac } from "node:crypto";
+import { createHash } from "node:crypto";
 
 const e6ToDiscordURL = `${config.fetchURL}/e6ids`;
 const discordToE6URL = `${config.fetchURL}/ids`;
 
 function getFetchHMAC(contents: string) {
-    return createHmac("sha256", config.fetchSecret).update(contents).digest("hex");
+    return createHash("sha256").update(`${contents} ${config.fetchSecret}`).digest("hex");
 }
 
 export async function discordToE6(id: string) {

@@ -169,6 +169,8 @@ async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandIntera
 }
 
 async function whoisCommand(interaction: CommandInteraction) {
+    const flags = (interaction.channel as AnyTextableGuildChannel).parentID === null || !config.staffCategories.includes((interaction.channel as AnyTextableGuildChannel).parentID!) ? MessageFlags.EPHEMERAL : 0;
+    await interaction.defer(flags);
     let id: string | number;
     // the getAll function expects a number if we're starting from a user id, and a string if we're starting
     // from a Discord id. There aren't any Discord accounts with an id shorter than 17 characters
@@ -178,21 +180,40 @@ async function whoisCommand(interaction: CommandInteraction) {
         if (!(interaction.data.target instanceof User)) {
             return interaction.reply({
                 content: "Invalid user.",
-                flags:   MessageFlags.EPHEMERAL
+                flags
             });
         }
         id = interaction.data.target.id;
     }
 
+    if (!/^\d+$/.test(id)) {
+        const members = await interaction.guild!.searchMembers({ query: id });
+        if (members.length === 0) {
+            return interaction.reply({
+                content: "I couldn't find that user.",
+                flags
+            });
+        }
+        id = members[0].id;
+    }
+
     if (id.length < 17) {
         id =  Number(id);
+        if (isNaN(id)) {
+            return interaction.reply({
+                content: "Invalid user.",
+                flags
+            });
+        }
     }
+
     const { discord, e6 } = await getAll(id);
     const userNames = await idToName(...e6);
 
     if (discord.length === 0 && e6.length === 0) {
         return interaction.reply({
-            content: "I couldn't find anyone with that ID."
+            content: "I couldn't find anyone with that ID.",
+                flags
         });
     }
 
@@ -218,7 +239,8 @@ async function whoisCommand(interaction: CommandInteraction) {
             repliedUser: false,
             roles:       false,
             users:       false
-        }
+        },
+        flags
     });
 }
 

@@ -7,8 +7,11 @@ export default async function registerCommands(client: DiscordBot, cachedCommand
     if (JSON.stringify(cachedCommands) === JSON.stringify(commands)) {
         return;
     }
-    await client.application.bulkEditGuildCommands(config.guildID, commands);
+    const registered = await client.application.bulkEditGuildCommands(config.guildID, commands);
     await Redis.set("bot-commands", JSON.stringify(commands));
+    for (const cmd of registered) {
+        console.log(`Registered command ${cmd.name}: ${cmd.id}`);
+    }
 }
 
 const phraseMinLength = 2, phraseMaxLength = 32;

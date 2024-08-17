@@ -69,7 +69,7 @@ export async function handleLinks(msg: Message<AnyTextableGuildChannel>) {
             await msg.edit({ flags: MessageFlags.SUPPRESS_EMBEDS });
             text += `[NSFW] <${config.baseURL}/posts/${id}>\n`;
         } else {
-            text += `${config.baseURL}/posts/${id}\n`;
+            text += `<${config.baseURL}/posts/${id}>\n`;
         }
         /* } else {
             text += `${config.baseURL}/posts/${id}\n`;

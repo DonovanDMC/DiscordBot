@@ -28,7 +28,7 @@ export const formatJumpLink = (guildID: string, channelID: string, messageID: st
 
 const host = new URL(config.baseURL).host;
 export const postRegex = new RegExp(`https?:\\/\\/(?:.*@)?${host.replaceAll(".", "\\.")}\\/+posts\\/+([0-9]+)`, "gi");
-export const imageRegex = new RegExp(`https?:\\/\\/(?:.*@)?${host.replaceAll(".", "\\.")}\\/+data\\/+(?:sample/+|preview/+|)[\\da-f]{2}/+[\\da-f]{2}/+([\\da-f]{32})\\.[\\da-z]+`, "gi");
+export const imageRegex = new RegExp(`https?:\\/\\/(?:.*@)?${host.replaceAll(".", "\\.")}\\/+data\\/+(?:sample/+|preview/+|)[\\da-f]{2}/+[\\da-f]{2}/+(?:sample\-)?([\\da-f]{32})\\.[\\da-z]+`, "gi");
 export const postIDRegex = /post #(\d+)/gi;
 export const wikiLinkRegex = /\[\[([\S ]+?)]]/gi;
 export const postSearchRegex = /{{([\S ]+?)}}/gi;
