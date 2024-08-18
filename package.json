@@ -39,7 +39,7 @@
     "@uwu-codes/logger": "^2.0.7",
     "dotenv": "^16.4.5",
     "ioredis": "^5.4.1",
-    "oceanic.js": "^1.11.1",
+    "oceanic.js": "^1.11.2",
     "promised-sqlite3": "^2.1.0",
     "source-map-support": "^0.5.21",
     "sqlite3": "^5.1.7"

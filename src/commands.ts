@@ -1,4 +1,5 @@
 import type DiscordBot from "./client.js";
+import config from "./config.js";
 import Redis from "./Redis.js";
 import { ApplicationCommandOptionTypes, ApplicationCommandTypes, ApplicationIntegrationTypes, CreateApplicationCommandOptions, InteractionContextTypes } from "oceanic.js";
 
@@ -13,6 +14,7 @@ export default async function registerCommands(client: DiscordBot, cachedCommand
     }
 }
 
+export const channelsToRename = [["general", config.channels.general]]
 const phraseMinLength = 2, phraseMaxLength = 32;
 const commands: Array<CreateApplicationCommandOptions> = [
     {
@@ -146,6 +148,29 @@ const commands: Array<CreateApplicationCommandOptions> = [
                 name:        "user",
                 description: "The user. Their site id, discord id, or a mention.",
                 required:    true
+            }
+        ],
+        contexts: [InteractionContextTypes.GUILD],
+        integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
+    },
+    {
+        type:        ApplicationCommandTypes.CHAT_INPUT,
+        name:        "rename",
+        description: "Get the related site & discord accounts for a user.",
+        options:     [
+            {
+                type:        ApplicationCommandOptionTypes.STRING,
+                name:        "channel",
+                description: "The Channel to rename",
+                required:    true,
+                choices:     channelsToRename.map(ch => ({ name: ch[0], value: ch[1] }))
+            },
+            {
+                type:        ApplicationCommandOptionTypes.STRING,
+                name:        "name",
+                description: "The new name for the channel.",
+                required:    true,
+                maxLength: 100
             }
         ],
         contexts: [InteractionContextTypes.GUILD],

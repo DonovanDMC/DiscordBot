@@ -23,6 +23,7 @@ import {
     type PrivateThreadChannel,
     ButtonStyles
 } from "oceanic.js";
+import { channelsToRename } from "../commands.js";
 
 export default new ClientEvent("interactionCreate", async function(interaction) {
     if (interaction.isCommandInteraction() && interaction.isChatInputCommand() && interaction.inPrivateChannel()) {
@@ -37,6 +38,7 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
                 switch (interaction.data.name) {
                     case "phrases": return phrasesCommand(interaction);
                     case "whois": return whoisCommand(interaction);
+                    case "rename": return renameCommand(interaction);
                     case "sync": return syncCommand(interaction);
                 }
             } else {
@@ -248,6 +250,34 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
         },
         flags
     });
+}
+
+async function renameCommand(interaction: CommandInteraction<AnyTextableGuildChannel>) {
+    if (interaction.channel.parentID === null || !config.staffCategories.includes(interaction.channel.parentID)) {
+        return interaction.reply({
+            content: "This command cannot be used here.",
+            flags:   MessageFlags.EPHEMERAL
+        });
+    }
+    const channelID = interaction.data.options.getString("channel", true);
+    const name = interaction.data.options.getString("name", true);
+    if (!channelsToRename.map(ch => ch[1]).includes(channelID)) {
+        return interaction.reply({
+            content: "I couldn't find that channel."
+        });
+    }
+
+    try {
+        await interaction.client.rest.channels.edit(channelID, { name, reason: `Command (${interaction.user.tag})` });
+
+        return interaction.reply({
+            content: `Renamed <#${channelID}> to ${name}.`
+        });
+    } catch (err) {
+        return interaction.reply({
+            content: `Something went wrong when renaming <#${channelID}>:\n\`\`\`\n${err}\n\`\`\``
+        });
+    }
 }
 
 async function syncCommand(interaction: CommandInteraction) {
