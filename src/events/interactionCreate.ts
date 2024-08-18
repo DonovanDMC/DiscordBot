@@ -21,7 +21,8 @@ import {
     ChannelTypes,
     type ModalSubmitInteraction,
     type PrivateThreadChannel,
-    ButtonStyles
+    ButtonStyles,
+    RateLimitedError
 } from "oceanic.js";
 import { channelsToRename } from "../commands.js";
 
@@ -259,6 +260,7 @@ async function renameCommand(interaction: CommandInteraction<AnyTextableGuildCha
             flags:   MessageFlags.EPHEMERAL
         });
     }
+    await interaction.defer();
     const channelID = interaction.data.options.getString("channel", true);
     const name = interaction.data.options.getString("name", true);
     if (!channelsToRename.map(ch => ch[1]).includes(channelID)) {
@@ -274,6 +276,12 @@ async function renameCommand(interaction: CommandInteraction<AnyTextableGuildCha
             content: `Renamed <#${channelID}> to ${name}.`
         });
     } catch (err) {
+        if (err instanceof RateLimitedError) {
+            const retryAt = Math.floor((Date.now() + err.delay) / 1000);
+            return interaction.reply({
+                content: `You're doing that too fast. Retry <t:${retryAt}:R>.`
+            });
+        }
         return interaction.reply({
             content: `Something went wrong when renaming <#${channelID}>:\n\`\`\`\n${err}\n\`\`\``
         });

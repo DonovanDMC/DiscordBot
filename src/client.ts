@@ -12,6 +12,9 @@ export default class DiscordBot extends Client {
             gateway: {
                 intents:                 ["ALL_NON_PRIVILEGED", "MESSAGE_CONTENT", "GUILD_MEMBERS"],
                 lookupDisallowedIntents: true
+            },
+            rest: {
+                maxRatelimitRetryWindow: 10000
             }
         });
 
