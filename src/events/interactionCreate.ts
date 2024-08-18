@@ -127,9 +127,14 @@ async function phrasesCommand(interaction: ChatInputApplicationCommandInteractio
 
 async function addPhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string) {
     await addPhrase(mention, phrase);
-    const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))?.[0]) || null;
+    const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))) || null;
     if (role) {
-        return interaction.reply({ content: `The phrase "${phrase}" has been added to the ${role.replaceAll("_", " ")} notification list.` });
+        return interaction.reply({
+            content: `The phrase "${phrase}" has been added to the <@&${role}> notification list.`,
+            allowedMentions: {
+                roles: false
+            }
+        });
     } else {
         return interaction.reply({ content: `The phrase "${phrase}" has been added to your notification list.` });
     }
@@ -137,9 +142,14 @@ async function addPhraseCommand(interaction: ChatInputApplicationCommandInteract
 
 async function removePhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string) {
     await removePhrase(mention, phrase);
-    const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))?.[0]) || null;
+    const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))) || null;
     if (role) {
-        return interaction.reply({ content: `The phrase "${phrase}" has been removed from the ${role.replaceAll("_", " ")} notification list.` });
+        return interaction.reply({
+            content: `The phrase "${phrase}" has been removed from the <@&${role}> notification list.`,
+            allowedMentions: {
+                roles: false
+            }
+        });
     } else {
         return interaction.reply({ content: `The phrase "${phrase}" has been removed from your notification list.` });
     }
