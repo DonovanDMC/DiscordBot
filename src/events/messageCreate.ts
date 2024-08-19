@@ -2,7 +2,7 @@ import ClientEvent from "../util/ClientEvent.js";
 import { handleLinks } from "../util/handleLinks.js";
 import { saveMessage } from "../db.js";
 import config from "../config.js";
-import { ApplicationCommandTypes } from "oceanic.js";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes } from "oceanic.js";
 import Redis, { getKeys } from "../Redis.js";
 
 export default new ClientEvent("messageCreate", async function(msg) {
@@ -23,15 +23,31 @@ export default new ClientEvent("messageCreate", async function(msg) {
                     for (const cmd of commands) {
                         switch (cmd.type) {
                             case ApplicationCommandTypes.CHAT_INPUT: {
-                                chatInput.push(`${cmd.name} (${cmd.id}): ${cmd.mention}`);
+                                chatInput.push(`* ${cmd.name} (${cmd.id})`);
+                                const options = cmd.options ?? [];
+                                const hasSubCommands = options.some(o => [ApplicationCommandOptionTypes.SUB_COMMAND, ApplicationCommandOptionTypes.SUB_COMMAND_GROUP].includes(o.type));
+                                if (hasSubCommands) {
+                                    for (const option of options) {
+                                        if (option.type === ApplicationCommandOptionTypes.SUB_COMMAND) {
+                                            chatInput.push(`  * ${cmd.mention([option.name])}`);
+                                        } else if (option.type === ApplicationCommandOptionTypes.SUB_COMMAND_GROUP && option.options) {
+                                            chatInput.push(`  * ${cmd.mention([option.name])}`);
+                                            for (const subOption of option.options) {
+                                                chatInput.push(`  * ${cmd.mention([option.name, subOption.name])}`);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    chatInput.push(`  * ${cmd.mention()}`)
+                                }
                                 break;
                             }
                             case ApplicationCommandTypes.USER: {
-                                user.push(`${cmd.name} (${cmd.id})`);
+                                user.push(`* ${cmd.name} (${cmd.id})`);
                                 break;
                             }
                             case ApplicationCommandTypes.MESSAGE: {
-                                message.push(`${cmd.name} (${cmd.id})`);
+                                message.push(`* ${cmd.name} (${cmd.id})`);
                                 break;
                             }
                         }
