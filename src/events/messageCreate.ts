@@ -53,7 +53,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
                         }
                     }
 
-                    local.push(`* !commands\n !reset-ticket-cooldowns [user]`);
+                    local.push("* !commands", "* !reset-ticket-cooldowns [user]");
 
                     return msg.channel.createMessage({
                         messageReference: {
@@ -68,9 +68,9 @@ export default new ClientEvent("messageCreate", async function(msg) {
                     const keys = await getKeys(`ticket-cooldown:${user}`);
                     if (keys.length > 0) {
                         await Redis.del(...keys);
-                        return msg.createReaction("✅");
+                        return msg.channel.createMessage({ content: `Reset ${keys.length} cooldowns for ${user}`});
                     } else {
-                        return msg.createReaction("❌");
+                        return msg.channel.createMessage({ content: `No cooldowns found for ${user}`});
                     }
                 }
             }
