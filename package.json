@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",
-    "test": "mocha"
+    "test": "mocha",
+    "update": "git pull && docker compose down && docker compose up -d --build"
   },
   "repository": {
     "type": "git",
