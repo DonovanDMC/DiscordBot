@@ -20,7 +20,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
             switch (command) {
                 case "!commands": {
                     const commands = await this.application.getGlobalCommands();
-                    const chatInput: string[] = [], user: string[] = [], message: string[] = [];
+                    const chatInput: string[] = [], user: string[] = [], message: string[] = [], local: string[] = [];
                     for (const cmd of commands) {
                         switch (cmd.type) {
                             case ApplicationCommandTypes.CHAT_INPUT: {
@@ -53,19 +53,25 @@ export default new ClientEvent("messageCreate", async function(msg) {
                         }
                     }
 
+                    local.push(`* !commands\n !reset-ticket-cooldowns [user]`);
+
                     return msg.channel.createMessage({
                         messageReference: {
                             messageID: msg.id
                         },
-                        content: `### Chat Input:\n${chatInput.join("\n")}\n### User:\n${user.join("\n")}\n### Message:\n${message.join("\n")}`
+                        content: `### Chat Input:\n${chatInput.join("\n")}\n### User:\n${user.join("\n")}\n### Message:\n${message.join("\n")}\n### Local:\n${local.join("\n")}`
                     });
                 }
 
-                case "!reset-ticket-cooldown": {
+                case "!reset-ticket-cooldowns": {
                     const user = args[0] || "*";
                     const keys = await getKeys(`ticket-cooldown:${user}`);
-                    await Redis.del(...keys);
-                    return msg.createReaction("✅");
+                    if (keys.length > 0) {
+                        await Redis.del(...keys);
+                        return msg.createReaction("✅");
+                    } else {
+                        return msg.createReaction("❌");
+                    }
                 }
             }
         }
