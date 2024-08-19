@@ -4,7 +4,7 @@ import { saveMessage } from "../db.js";
 import config from "../config.js";
 import { ApplicationCommandOptionTypes, ApplicationCommandTypes } from "oceanic.js";
 import Redis, { getKeys } from "../Redis.js";
-import { checkStaff, isDev } from "../util/util.js";
+import { isDev } from "../util/util.js";
 
 export default new ClientEvent("messageCreate", async function(msg) {
     if (msg.author.id === this.user.id || msg.guildID !== config.guildID) {
