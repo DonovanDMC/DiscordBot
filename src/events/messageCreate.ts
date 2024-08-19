@@ -4,7 +4,7 @@ import { saveMessage } from "../db.js";
 import config from "../config.js";
 import { ApplicationCommandOptionTypes, ApplicationCommandTypes } from "oceanic.js";
 import Redis, { getKeys } from "../Redis.js";
-import { checkStaff } from "../util/util.js";
+import { checkStaff, isDev } from "../util/util.js";
 
 export default new ClientEvent("messageCreate", async function(msg) {
     if (msg.author.id === this.user.id || msg.guildID !== config.guildID) {
@@ -15,7 +15,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
     if (msg.inCachedGuildChannel()) {
         await handleLinks(msg);
 
-        if (checkStaff(msg)) {
+        if (isDev(msg)) {
             const [command, ...args] = msg.content.split(" ");
             switch (command) {
                 case "!commands": {
@@ -70,7 +70,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
                         await Redis.del(...keys);
                         return msg.channel.createMessage({ content: `Reset ${keys.length} cooldowns for ${user}`});
                     } else {
-                        return msg.channel.createMessage({ content: `No cooldowns found for ${user}`});
+                        return msg.channel.createMessage({ content: `No active cooldowns found for ${user}`});
                     }
                 }
             }
