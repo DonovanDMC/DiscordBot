@@ -59,14 +59,14 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
 
         if (interaction.isComponentInteraction() && interaction.isButtonComponentInteraction()) {
             switch (interaction.data.customID) {
-                case "open-ticket": return openTicket(interaction);
-                case "close-ticket": return closeTicket(interaction);
+                case "open-ticket": return openTicketComponent(interaction);
+                case "close-ticket": return closeTicketComponent(interaction);
             }
         }
 
         if (interaction.isModalSubmitInteraction()) {
             switch (interaction.data.customID) {
-                case "open-ticket-modal": return submitTicket(interaction);
+                case "open-ticket-modal": return submitTicketModal(interaction);
             }
         }
     }
@@ -362,7 +362,7 @@ async function roleAutocomplete(interaction: AutocompleteInteraction<AnyTextable
 // * [CHANNEL] - The id of the channel to send the message to
 // You can also change the color of the button by changing `style` to 2, 3, or 4.
 // See: https://discord.com/developers/docs/interactions/message-components#button-object-button-styles
-async function openTicket(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
+async function openTicketComponent(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
     const timeout = await Redis.get(`ticket-timeout:${interaction.user.id}`);
     if (timeout) {
         return interaction.reply({ content: "You can only create one ticket per day.", flags: MessageFlags.EPHEMERAL });
@@ -391,7 +391,7 @@ async function openTicket(interaction: ComponentInteraction<ComponentTypes.BUTTO
     });
 }
 
-async function closeTicket(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
+async function closeTicketComponent(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
     if (interaction.channel.type !== ChannelTypes.PRIVATE_THREAD) {
         Logger.getLogger("CloseTicket").warn("Attempted to close a ticket in a non-thread channel.");
         return interaction.reply({ content: "Whoops. Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
@@ -420,7 +420,7 @@ async function closeTicket(interaction: ComponentInteraction<ComponentTypes.BUTT
 }
 
 
-async function submitTicket(interaction: ModalSubmitInteraction<AnyTextableGuildChannel>) {
+async function submitTicketModal(interaction: ModalSubmitInteraction<AnyTextableGuildChannel>) {
     await Redis.setex(`ticket-timeout:${interaction.user.id}`, 60 * 60 * 24, "1");
     await interaction.defer(MessageFlags.EPHEMERAL);
 

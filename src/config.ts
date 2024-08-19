@@ -33,6 +33,7 @@ const config = {
     blacklistedNonSafeTags: env("BLACKLISTED_NON_SAFE_TAGS")?.split(",") || [],
     staffCategories:        env("STAFF_CATEGORIES")?.split(",") || [],
     safeChannels:           env("SAFE_CHANNELS")?.split(",") || [],
-    phraseRoles:            env("PHRASE_ROLES")?.split(",") || []
+    phraseRoles:            env("PHRASE_ROLES")?.split(",") || [],
+    developerUserIDs:       env("DEVELOPER_USER_IDS")?.split(",") || [],
 };
 export default config;
