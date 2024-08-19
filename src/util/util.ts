@@ -1,6 +1,6 @@
 import config from "../config.js";
 import pkg from "../../package.json" assert { type: "json" };
-import { Message } from "oceanic.js";
+import { AnyInteractionGateway, GuildChannel, Interaction, Message } from "oceanic.js";
 import Logger from "@uwu-codes/logger";
 
 export const ucwords = (str: string) => str.replaceAll(/\b\w/g, char => char.toUpperCase());
@@ -59,4 +59,24 @@ export async function getPostByMD5(md5: string) {
     }
     const data = await res.json() as { post: { id: number; rating: "s" | "q" | "e"; tags: Record<string, Array<string>>; }; };
     return { id: data.post.id, rating: data.post.rating, tags: Object.entries(data.post.tags).flatMap(t => t[1]) };
+}
+
+export function checkStaff(input: AnyInteractionGateway | Message) {
+    if ("channel" in input && input.channel instanceof GuildChannel && (input.channel.parentID !== null && config.staffCategories.includes(input.channel.parentID))) {
+        return true;
+    }
+
+    return input.member && input.member.roles.includes(config.roles.staff);
+}
+
+export function isDev(input: AnyInteractionGateway | Message | string) {
+    if (input instanceof Interaction) {
+        input = input.user.id;
+    }
+
+    if (input instanceof Message) {
+        input = input.author.id;
+    }
+
+    return config.developerUserIDs.includes(input);
 }

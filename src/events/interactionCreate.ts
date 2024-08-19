@@ -1,7 +1,7 @@
 import ClientEvent from "../util/ClientEvent.js";
 import config from "../config.js";
 import { addPhrase, getAllPhrases, getPhrasesFor, removePhrase } from "../phrases.js";
-import { idToName, normalizeName } from "../util/util.js";
+import { checkStaff, idToName, normalizeName } from "../util/util.js";
 import { getAll } from "../util/userFetcher.js";
 import Redis from "../Redis.js";
 import Logger from "@uwu-codes/logger";
@@ -22,8 +22,7 @@ import {
     type ModalSubmitInteraction,
     type PrivateThreadChannel,
     ButtonStyles,
-    RateLimitedError,
-    GuildChannel
+    RateLimitedError
 } from "oceanic.js";
 import { channelsToRename } from "../commands.js";
 
@@ -71,14 +70,6 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
         }
     }
 });
-
-function checkStaff(interaction: CommandInteraction) {
-    if (interaction.channel instanceof GuildChannel && (interaction.channel.parentID !== null && config.staffCategories.includes(interaction.channel.parentID))) {
-        return true;
-    }
-
-    return interaction.member && interaction.member.roles.includes(config.roles.staff);
-}
 
 type ChatInputApplicationCommandInteraction<T extends AnyInteractionChannel | Uncached = AnyInteractionChannel | Uncached> =  CommandInteraction<T, ApplicationCommandTypes.CHAT_INPUT>;
 
