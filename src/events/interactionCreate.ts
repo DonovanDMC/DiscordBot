@@ -22,7 +22,8 @@ import {
     type ModalSubmitInteraction,
     type PrivateThreadChannel,
     ButtonStyles,
-    RateLimitedError
+    RateLimitedError,
+    GuildChannel
 } from "oceanic.js";
 import { channelsToRename } from "../commands.js";
 
@@ -71,9 +72,21 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
     }
 });
 
+function checkStaff(interaction: CommandInteraction) {
+    if (interaction.channel instanceof GuildChannel && (interaction.channel.parentID !== null && config.staffCategories.includes(interaction.channel.parentID))) {
+        return true;
+    }
+
+    return interaction.member && interaction.member.roles.includes(config.roles.staff);
+}
+
 type ChatInputApplicationCommandInteraction<T extends AnyInteractionChannel | Uncached = AnyInteractionChannel | Uncached> =  CommandInteraction<T, ApplicationCommandTypes.CHAT_INPUT>;
 
 async function phrasesCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>) {
+    if (!checkStaff(interaction)) {
+        return interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+    }
+
     const [subcommand, subcommandGroup] = interaction.data.options.getSubCommand(true);
 
     switch (subcommand) {
@@ -188,6 +201,10 @@ async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandIntera
 }
 
 async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChannel>) {
+    if (!checkStaff(interaction)) {
+        return interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+    }
+
     const flags = interaction.channel.parentID === null || !config.staffCategories.includes(interaction.channel.parentID) ? MessageFlags.EPHEMERAL : 0;
     await interaction.defer(flags);
     let id: string | number;
@@ -264,18 +281,18 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
 }
 
 async function renameCommand(interaction: CommandInteraction<AnyTextableGuildChannel>) {
-    if (interaction.channel.parentID === null || !config.staffCategories.includes(interaction.channel.parentID)) {
-        return interaction.reply({
-            content: "This command cannot be used here.",
-            flags:   MessageFlags.EPHEMERAL
-        });
+    if (!checkStaff(interaction)) {
+        return interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
     }
-    await interaction.defer();
+
+    const flags = interaction.channel.parentID === null || !config.staffCategories.includes(interaction.channel.parentID) ? MessageFlags.EPHEMERAL : 0;
+    await interaction.defer(flags);
     const channelID = interaction.data.options.getString("channel", true);
     const name = interaction.data.options.getString("name", true);
     if (!channelsToRename.map(ch => ch[1]).includes(channelID)) {
         return interaction.reply({
-            content: "I couldn't find that channel."
+            content: "I couldn't find that channel.",
+            flags
         });
     }
 
@@ -283,17 +300,20 @@ async function renameCommand(interaction: CommandInteraction<AnyTextableGuildCha
         await interaction.client.rest.channels.edit(channelID, { name, reason: `Command (${interaction.user.tag})` });
 
         return interaction.reply({
-            content: `Renamed <#${channelID}> to ${name}.`
+            content: `Renamed <#${channelID}> to ${name}.`,
+            flags
         });
     } catch (err) {
         if (err instanceof RateLimitedError) {
             const retryAt = Math.floor((Date.now() + err.delay) / 1000);
             return interaction.reply({
-                content: `You're doing that too fast. Retry <t:${retryAt}:R>.`
+                content: `You're doing that too fast. Retry <t:${retryAt}:R>.`,
+                flags
             });
         }
         return interaction.reply({
-            content: `Something went wrong when renaming <#${channelID}>:\n\`\`\`\n${err}\n\`\`\``
+            content: `Something went wrong when renaming <#${channelID}>:\n\`\`\`\n${err}\n\`\`\``,
+            flags
         });
     }
 }

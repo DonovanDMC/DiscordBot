@@ -3,7 +3,8 @@ import config from "./config.js";
 import Redis from "./Redis.js";
 import { ApplicationCommandOptionTypes, ApplicationCommandTypes, ApplicationIntegrationTypes, CreateApplicationCommandOptions, InteractionContextTypes } from "oceanic.js";
 
-export default async function registerCommands(client: DiscordBot, cachedCommands: Array<CreateApplicationCommandOptions>) {
+export default async function registerCommands(client: DiscordBot) {
+    const cachedCommands = JSON.parse((await Redis.get("bot-commands")) || "[]") as Array<CreateApplicationCommandOptions>;
     if (JSON.stringify(cachedCommands) === JSON.stringify(commands)) {
         return;
     }

@@ -8,15 +8,15 @@ const env = <R extends boolean = false>(key: string, required?: R): R extends tr
 };
 const config = {
     discordToken:  env("DISCORD_TOKEN", true),
-    redis:         env("REDIS_URL") || "redis://redis/1",
+    redis:         env("REDIS_URL") || "redis://localhost:6379",
     redisChannels: {
         tickets: env("REDIS_CHANNEL_TICKETS") || "ticket_updates"
     },
     guildID: env("GUILD_ID", true),
     roles:   {
-        admin:             env("ADMIN_ROLE_ID", true),
         member:            env("MEMBER_ROLE_ID", true),
-        privateHelpHelper: env("PRIVATE_HELP_HELPER_ROLE_ID", true)
+        privateHelpHelper: env("PRIVATE_HELP_HELPER_ROLE_ID", true),
+        staff:             env("STAFF_ROLE_ID", true),
     },
     channels: {
         auditLog:  env("AUDIT_LOG_CHANNEL_ID", true),
