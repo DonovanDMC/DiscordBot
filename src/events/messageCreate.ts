@@ -64,7 +64,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
                 }
 
                 case "!reset-ticket-cooldowns": {
-                    const user = args[0] || "*";
+                    const user = (args[0] || "*").replace(/<@!?(\d+)>/, "$1");
                     const keys = await getKeys(`ticket-timeout:${user}`);
                     if (keys.length > 0) {
                         await Redis.del(...keys);
