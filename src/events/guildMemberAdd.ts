@@ -1,6 +1,6 @@
 import ClientEvent from "../util/ClientEvent.js";
 import config from "../config.js";
-import { idToName } from "../util/util.js";
+import { idToName, normalizeName } from "../util/util.js";
 import { getAllFromDiscord } from "../util/userFetcher.js";
 import Logger from "@uwu-codes/logger";
 
@@ -33,7 +33,7 @@ export default new ClientEvent("guildMemberAdd", async function(member) {
         }
     });
 
-    await member.edit({ nick: userNames[e6[0]] })
+    await member.edit({ nick: normalizeName(userNames[e6[0]]) })
     .catch(err => {
         Logger.getLogger("GuildMemberAdd").error("Failed to set nickname:");
         Logger.getLogger("GuildMemberAdd").error(err);
