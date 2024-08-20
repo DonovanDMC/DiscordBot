@@ -65,7 +65,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
 
                 case "!reset-ticket-cooldowns": {
                     const user = args[0] || "*";
-                    const keys = await getKeys(`ticket-cooldown:${user}`);
+                    const keys = await getKeys(`ticket-timeout:${user}`);
                     if (keys.length > 0) {
                         await Redis.del(...keys);
                         return msg.channel.createMessage({ content: `Reset ${keys.length} cooldowns for ${user}`});
