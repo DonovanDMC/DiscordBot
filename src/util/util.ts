@@ -80,3 +80,20 @@ export function isDev(input: AnyInteractionGateway | Message | string) {
 
     return config.developerUserIDs.includes(input);
 }
+
+export function formatTime(ns: bigint) {
+    const res = {
+        nanoseconds: [ns % 1_000n, "ns"],
+        microseconds: [(ns / 1_000n) % 1_000n, "µs"],
+        milliseconds: [(ns / 1_000_000n) % 1_000n, "ms"],
+        seconds: [(ns / 1_000_000_000n) % 60n, "second"],
+        minutes: [(ns / 60_000_000_000n) % 60n, "minute"],
+        hours: [(ns / 3_600_000_000_000n) % 24n, "hour"],
+        days: [ns / 86_400_000_000_000n, "day"]
+    } as const
+
+    return Object.entries(res)
+        .filter(([_, v]) => v[0] > 0n)
+        .map(([k, v]) => `${v} ${k[1]}${v[0] !== 1n ? "s" : ""}`)
+        .join(", ");
+}

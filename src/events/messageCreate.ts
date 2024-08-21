@@ -1,18 +1,44 @@
 import ClientEvent from "../util/ClientEvent.js";
 import { handleLinks } from "../util/handleLinks.js";
 import { saveMessage } from "../db.js";
+import { formatTime } from "../util/util.js";
 import config from "../config.js";
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes } from "oceanic.js";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Constants } from "oceanic.js";
 import Redis, { getKeys } from "../Redis.js";
 import { isDev } from "../util/util.js";
+import * as db from "../db.js";
+import * as util from "../util/util.js";
+import * as dtext from "../util/dtext.js";
+import * as phrases from "../phrases.js";
+import { inspect } from "util";
+
+const evalVariables: Record<string, unknown> = {
+    config,
+    Redis,
+    Constants,
+    db,
+    util,
+    dtext,
+    phrases
+};
+
+async function format(obj: unknown) {
+    if (obj instanceof Promise) {
+        obj = await obj;
+    }
+    if (Array.isArray(obj)) {
+        return JSON.stringify(obj, (_k, v: unknown) => typeof v === "bigint" ? `${v.toString()}n` : v);
+    }
+    return inspect(obj, { depth: 1, colors: false, showHidden: false });
+}
 
 export default new ClientEvent("messageCreate", async function(msg) {
     if (msg.author.id === this.user.id || msg.guildID !== config.guildID) {
         return;
     }
 
-    await saveMessage(msg);
     if (msg.inCachedGuildChannel()) {
+        await saveMessage(msg);
         await handleLinks(msg);
 
         if (isDev(msg)) {
@@ -73,6 +99,61 @@ export default new ClientEvent("messageCreate", async function(msg) {
                         return msg.channel.createMessage({ content: `No active cooldowns found for ${user}`});
                     }
                 }
+
+                case "!eval": {
+                    // eslint-disable-next-line guard-for-in
+                    for (const k in evalVariables) {
+                        // eslint-disable-next-line guard-for-in, @typescript-eslint/no-implied-eval, no-new-func -- typescript messes with variable names so we have to remake them
+                        new Function("value", `${k} = value`)(evalVariables[k]);
+                    }
+                    const input = args.join(" ");
+                    const start = process.hrtime.bigint();
+                    let res: unknown
+                    try {
+                    // eslint-disable-next-line no-eval
+                        res = await eval(`(async()=>{${input.includes("return") ? "" : "return "}${input}})()`);
+                    } catch (err) {
+                        res = err;
+                    }
+                    const end = process.hrtime.bigint();
+                    const time = formatTime(end - start);
+                    let formatted = await format(res), file: string | undefined;
+                    if (formatted.length >= 750) {
+                        try {
+                            file = inspect(JSON.parse(formatted), { depth: 1, colors: false, showHidden: false });
+                        } catch {
+                            file = formatted;
+                        }
+                        formatted = "see attached file";
+                    }
+
+                    return msg.channel.createMessage({
+                        embeds: [
+                            {
+                                title: `Time Taken: ${time}`,
+                                color: res instanceof Error ? 0xDC143C : 0x008000,
+                                fields: [
+                                    {
+                                        name: ":inbox_tray: Input",
+                                        value: `\`\`\`js\n${input.slice(0, 750)}\n\`\`\``
+                                    },
+                                    {
+                                        name: ":outbox_tray: Output",
+                                        value: `\`\`\`js\n${formatted}\n\`\`\``
+                                    }
+                                ]
+                            }
+                        ],
+                        files: file ? [
+                            {
+                                contents: Buffer.from(file),
+                                name: "output.txt",
+                            }
+                        ] : [
+                        ]
+                    })
+                }
+
             }
         }
     }
