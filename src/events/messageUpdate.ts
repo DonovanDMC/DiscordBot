@@ -43,11 +43,11 @@ export default new ClientEvent("messageUpdate", async function(msg, oldMessage) 
         const removedAttachments = old.attachments.filter(att => !msg.attachments.toArray().some(a => a.id === att.id));
 
         if (addedAttachments.length !== 0) {
-            embed.addField("Added Attachments", addedAttachments.map(a => `[${a.filename}](${a.url})`).join(", "));
+            embed.addField("Added Attachments", addedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
         }
 
         if (removedAttachments.length !== 0) {
-            embed.addField("Removed Attachments", removedAttachments.map(a => `[${a.filename}](${a.url})`).join(", "));
+            embed.addField("Removed Attachments", removedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
         }
 
         await this.rest.channels.createMessage(config.channels.event, {

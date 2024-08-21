@@ -31,7 +31,11 @@ export async function logDeletedMessage(this: DiscordBot, msg: FormattedMessage,
     }
 
     if (msg.attachments.length !== 0) {
-        embed.addField("Attachments", msg.attachments.map(a => `[${a.filename}](${a.url})`).join(", "));
+        embed.addField("Attachments", msg.attachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
+    }
+
+    if (msg.stickers.length !== 0) {
+        embed.addField("Stickers", msg.stickers.map(s => `[${s.name}](https://cdn.discordapp.com/stickers/${s.id}.png)`).join(", "));
     }
 
     await this.rest.channels.createMessage(config.channels.event, {

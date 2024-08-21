@@ -93,6 +93,6 @@ export function formatTime(ns: bigint) {
 
     return Object.entries(res)
         .filter(([_, v]) => v[0] > 0n)
-        .map(([, [v, k]]) => `${v} ${k}${v !== 1n ? "s" : ""}`)
+        .map(([, [v, k]]) => `${v} ${k}${v !== 1n && !["µs", "ms"].includes(k) ? "s" : ""}`)
         .join(", ");
 }
