@@ -57,6 +57,7 @@ export async function saveMessage(message: Message) {
         message.content
     ]);
 }
+
 export async function getMessage(id: string) {
     const msg = await db.get<DBMessage | undefined>("SELECT * FROM messages WHERE id = ?", id);
     if (!msg) {
@@ -65,13 +66,13 @@ export async function getMessage(id: string) {
 
     return {
         // for legacy we supply filename as the id for comparisons
-        attachments: !msg.attachments.startsWith("[") ? msg.attachments.split("$").map(attachment => ({ url: "ignore", filename: attachment, id: attachment })) : JSON.parse(msg.attachments) as Array<JSONAttachment>,
+        attachments: !msg.attachments.startsWith("[") ? msg.attachments.split("$").filter(Boolean).map(attachment => ({ url: "ignore", filename: attachment, id: attachment })) : JSON.parse(msg.attachments) as Array<JSONAttachment>,
         authorID:    msg.author_id,
         authorName:  msg.author_name,
         channelID:   msg.channel_id,
         content:     msg.content,
         id:          msg.id,
-        stickers:    !msg.stickers.startsWith("[") ? msg.stickers.split("$").map(sticker => ({ id: sticker.split(":")[1] ?? "0", name: sticker.split(":")[0] })) : JSON.parse(msg.stickers) as Array<StickerItem>
+        stickers:    !msg.stickers.startsWith("[") ? msg.stickers.split("$").filter(Boolean).map(sticker => ({ id: sticker.split(":")[1] ?? "0", name: sticker.split(":")[0] })) : JSON.parse(msg.stickers) as Array<StickerItem>
     };
 }
 
