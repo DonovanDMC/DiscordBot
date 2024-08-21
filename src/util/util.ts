@@ -83,7 +83,6 @@ export function isDev(input: AnyInteractionGateway | Message | string) {
 
 export function formatTime(ns: bigint) {
     const res = {
-        nanoseconds: [ns % 1_000n, "ns"],
         microseconds: [(ns / 1_000n) % 1_000n, "µs"],
         milliseconds: [(ns / 1_000_000n) % 1_000n, "ms"],
         seconds: [(ns / 1_000_000_000n) % 60n, "second"],
@@ -94,6 +93,6 @@ export function formatTime(ns: bigint) {
 
     return Object.entries(res)
         .filter(([_, v]) => v[0] > 0n)
-        .map(([k, v]) => `${v} ${k[1]}${v[0] !== 1n ? "s" : ""}`)
+        .map(([, [v, k]]) => `${v} ${k}${v !== 1n ? "s" : ""}`)
         .join(", ");
 }
