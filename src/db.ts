@@ -29,6 +29,7 @@ export interface FormattedMessage {
 
 const path = new URL("../../data", import.meta.url).pathname;
 const db = await AsyncDatabase.open(`${path}/messages.db`);
+export const conn = db;
 const init = await readFile(`${path}/init.sql`, "utf8");
 await db.run(init);
 
