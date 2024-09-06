@@ -21,7 +21,7 @@ const config = {
     channels: {
         auditLog:  env("AUDIT_LOG_CHANNEL_ID", true),
         event:     env("EVENT_CHANNEL_ID", true),
-        general:  env("GENERAL_CHANNEL_ID", true),
+        general:   env("GENERAL_CHANNEL_ID", true),
         newMember: env("NEW_MEMBER_CHANNEL_ID", true),
         ticket:    env("TICKET_CHANNEL_ID", true),
         voiceLog:  env("VOICE_LOG_CHANNEL_ID", true),

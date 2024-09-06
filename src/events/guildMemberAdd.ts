@@ -10,7 +10,9 @@ export default new ClientEvent("guildMemberAdd", async function(member) {
     }
 
 
+    // get all of the user's discord and e6 accounts
     const { discord, e6 } = await getAllFromDiscord(member.id);
+    // bulk fetch the usernames of the e6 accounts
     const userNames = await idToName(...e6);
 
     let text = `${member.mention}'s site and discord accounts:\n`;
@@ -33,6 +35,7 @@ export default new ClientEvent("guildMemberAdd", async function(member) {
         }
     });
 
+    // set the user's nickname to the name of their first e6 account
     await member.edit({ nick: normalizeName(userNames[e6[0]]) })
     .catch(err => {
         Logger.getLogger("GuildMemberAdd").error("Failed to set nickname:");

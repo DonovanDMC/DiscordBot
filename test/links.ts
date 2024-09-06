@@ -36,12 +36,16 @@ describe.only("Links", () => {
         expect(formatDtext("wiki #1")).eq("<http://localhost/wiki_pages/1>\n");
         expect(formatDtext("set #1")).eq("<http://localhost/post_sets/1>\n");
         expect(formatDtext("ticket #1")).eq("<http://localhost/tickets/1>\n");
+        expect(formatDtext("take down request #1")).eq("<http://localhost/takedowns/1>\n");
+        expect(formatDtext("takedown request #1")).eq("<http://localhost/takedowns/1>\n");
         expect(formatDtext("take down #1")).eq("<http://localhost/takedowns/1>\n");
         expect(formatDtext("takedown #1")).eq("<http://localhost/takedowns/1>\n");
-        expect(formatDtext("[[1]]")).eq("<http://localhost/wiki_pages/1>\n");
+        expect(formatDtext("[[1]]")).eq("<http://localhost/wiki_pages/show_or_new?title=1>\n");
         expect(formatDtext("[[gay]]")).eq("<http://localhost/wiki_pages/show_or_new?title=gay>\n");
         expect(formatDtext("[[gay homo]]")).eq("<http://localhost/wiki_pages/show_or_new?title=gay_homo>\n");
+        expect(formatDtext("[[gay|homo]]")).eq("<http://localhost/wiki_pages/show_or_new?title=gay>\n");
         expect(formatDtext("{{gay}}")).eq("<http://localhost/posts?tags=gay>\n");
         expect(formatDtext("{{gay homo}}")).eq("<http://localhost/posts?tags=gay%20homo>\n");
+        expect(formatDtext("{{gay|homo}}")).eq("<http://localhost/posts?tags=gay>\n");
     });
 });

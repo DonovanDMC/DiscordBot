@@ -10,6 +10,9 @@ process
     .on("SIGTERM", () => {
         bot.disconnect(false);
     })
+    .on("SIGINT", () => {
+        bot.disconnect(false);
+    })
     .on("uncaughtException", err => {
         Logger.getLogger("uncaughtException").error(err);
     })

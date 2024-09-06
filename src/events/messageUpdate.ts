@@ -17,6 +17,8 @@ export default new ClientEvent("messageUpdate", async function(msg, oldMessage) 
     }
 
     if (old) {
+        // ensure we only log changes if the content or attachments changed (stickers/poll/etc should be uneditable)
+        // we're aviding phantom edits from rich embeds loading
         if (msg.content === old.content && JSON.stringify(msg.attachments.toArray()) === JSON.stringify(old.attachments)) {
             return;
         }
@@ -43,10 +45,12 @@ export default new ClientEvent("messageUpdate", async function(msg, oldMessage) 
         const removedAttachments = old.attachments.filter(att => !msg.attachments.toArray().some(a => a.id === att.id));
 
         if (addedAttachments.length !== 0) {
+        // legacy attachments which didn't save their url will have the url set to "ignore"
             embed.addField("Added Attachments", addedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
         }
 
         if (removedAttachments.length !== 0) {
+        // legacy attachments which didn't save their url will have the url set to "ignore"
             embed.addField("Removed Attachments", removedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
         }
 

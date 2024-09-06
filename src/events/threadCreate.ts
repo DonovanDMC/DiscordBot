@@ -7,9 +7,10 @@ export default new ClientEvent("threadCreate", async function(thread) {
         return;
     }
 
+    // We join all threads so we can ensure we get message events
     await thread.join()
-    .catch(err => {
-        Logger.getLogger("ThreadCreate").error("Failed to join thread:");
-        Logger.getLogger("ThreadCreate").error(err);
-    });
+        .catch(err => {
+            Logger.getLogger("ThreadCreate").error("Failed to join thread:");
+            Logger.getLogger("ThreadCreate").error(err);
+        });
 });

@@ -12,6 +12,8 @@ export default new ClientEvent("messageDelete", async function(msg) {
     }
 
     const old = await getMessage(msg.id) ?? (msg instanceof Message && formatMessage(msg as Message));
+    // if we both didn't have the message cached in memory or the database, we have no choice but to ignore it
+    // since we only get id, channel_id, and guild_id
     if (old) {
         await logDeletedMessage.call(this, old, msg);
     }
@@ -31,6 +33,7 @@ export async function logDeletedMessage(this: DiscordBot, msg: FormattedMessage,
     }
 
     if (msg.attachments.length !== 0) {
+        // legacy attachments which didn't save their url will have the url set to "ignore"
         embed.addField("Attachments", msg.attachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
     }
 

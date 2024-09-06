@@ -9,7 +9,7 @@ import {
     type AuditLogEntryOptions,
     DiscordRESTError,
     JSONErrorCodes,
-    type OverwriteTypes,
+    OverwriteTypes,
     Permission,
     type PermissionName,
     type RoleAuditLogChange,
@@ -49,6 +49,7 @@ export default new ClientEvent("guildAuditLogEntryCreate", async function(guild,
         embeds: embed.toJSON(true)
     })
         .catch(async err => {
+            // if the message failed to send because it was too large, attempt to send it again but as an attached text file
             if (err instanceof DiscordRESTError && err.code === JSONErrorCodes.INVALID_FORM_BODY) {
                 const e = embed.toJSON();
                 let full = "";
@@ -112,15 +113,19 @@ const IgnoredActions = new Set([
     AuditLogActionTypes.AUTO_MODERATION_FLAG_TO_CHANNEL
 ]);
 
+// determine if we should log an audit log entry
 function shouldLog(client: DiscordBot, entry: AuditLogEntry) {
+    // if the entry has no blamed user, ignore it
     if (entry.userID === null) {
         return true;
     }
 
+    // there's a few actions we don't care about regardless
     if (IgnoredActions.has(entry.actionType)) {
         return false;
     }
 
+    // if the action is a role update, we do further checks
     if (entry.actionType === AuditLogActionTypes.MEMBER_ROLE_UPDATE) {
         return shouldLogRoleChanges(client, entry.changes as Array<RoleAuditLogChange>);
     }
@@ -147,14 +152,17 @@ function formatChange(change: AuditLogChange) {
 
     assert(is<StandardAuditLogChange>(change));
 
+    // timeout
     if (change.key === "communication_disabled_until") {
         return formatTimeoutChange(change);
     }
 
+    // role permissions/channel overwrites
     if (["permissions", "allow", "deny"].includes(change.key)) {
         return formatPermissionOrOverwrites(change.key, new Permission(change.old_value as string || "0"), new Permission(change.new_value as string || "0"));
     }
 
+    // generic changes
     if (change.new_value !== undefined && change.old_value === undefined) {
         return `Set ${change.key} to ${String(change.new_value)}`;
     } else if (change.new_value === undefined && change.old_value !== undefined) {
@@ -178,6 +186,7 @@ function formatMemberRoleChange(change: RoleAuditLogChange) {
 }
 
 function formatTimeoutChange(change: StandardAuditLogChange) {
+    // old value will be null if the timeout has been removed
     if ("old_value" in change) {
         return "Timeout removed";
     } else {
@@ -188,7 +197,9 @@ function formatTimeoutChange(change: StandardAuditLogChange) {
 
 function formatPermissionOrOverwrites(key: string, oldPermissions: Permission, newPermissions: Permission) {
     switch (key) {
+        // role
         case "permissions": return formatPermissionChange(oldPermissions, newPermissions, "Removed", "Added");
+        // channel overwrite
         case "allow": return formatPermissionChange(oldPermissions, newPermissions, "Allow removed", "Allow added");
         case "deny": return formatPermissionChange(oldPermissions, newPermissions, "Deny removed", "Deny added");
         default: return formatPermissionChange(oldPermissions, newPermissions, `${key} removed`, `${key} added`);
@@ -200,11 +211,15 @@ function formatPermissionChange(oldPermissions: Permission, newPermissions: Perm
         removed: Array<PermissionName> = [],
         oldPermNames = Object.entries(oldPermissions.json).filter(([,v]) => v).map(([v]) => v) as Array<PermissionName>,
         newPermNames = Object.entries(newPermissions.json).filter(([,v]) => v).map(([v]) => v) as Array<PermissionName>;
+
+    // get all removed permissions
     for (const perm of oldPermNames) {
         if (!newPermNames.includes(perm)) {
             removed.push(perm);
         }
     }
+
+    // get all added permissions
     for (const perm of newPermNames) {
         if (!oldPermNames.includes(perm)) {
             added.push(perm);
@@ -222,6 +237,7 @@ function formatPermissionChange(oldPermissions: Permission, newPermissions: Perm
     return result.slice(0, -1);
 }
 
+// we ignore roles which are in boarding
 function shouldLogRoleChanges(client: DiscordBot, changes: Array<RoleAuditLogChange>) {
     const changedRoleIDs = changes.flatMap(r => r.new_value.map(v => v.id));
     for (const id of changedRoleIDs) {
@@ -265,8 +281,8 @@ function formatMessagePin(channelID: string, messageID: string) {
 
 function formatChannelOverwrite(id: string, targetType: `${OverwriteTypes}`) {
     switch (targetType) {
-        case "0": return `<@&${id}>`;
-        case "1": return `<@${id}>`;
+        case `${OverwriteTypes.ROLE}`: return `<@&${id}>`;
+        case `${OverwriteTypes.MEMBER}`: return `<@${id}>`;
         default: return id;
     }
 }
