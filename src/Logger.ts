@@ -76,6 +76,6 @@ export default class Logger {
     }
 
     static getLogger(name: string, ...names: Array<string>): ILogger {
-        return this._log.child({ name: [name, ...names] });
+        return this.log.child({ name: [name, ...names] });
     }
 }
