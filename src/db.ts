@@ -6,6 +6,7 @@ import {
     type JSONMessage,
     Attachment
 } from "oceanic.js";
+import { type RunResult } from "sqlite3";
 import { readFile } from "node:fs/promises";
 
 export interface DBMessage {
@@ -46,7 +47,7 @@ export function formatMessage(msg: Message | JSONMessage): FormattedMessage {
 }
 
 const upsertQuery = await db.prepare("INSERT INTO messages (id, author_id, author_name, channel_id, attachments, stickers, content) VALUES (?, ?, ?, ?, ?, ?, ?)");
-export async function saveMessage(message: Message) {
+export async function saveMessage(message: Message): Promise<RunResult> {
     return upsertQuery.run([
         message.id,
         message.author.id,
@@ -58,7 +59,7 @@ export async function saveMessage(message: Message) {
     ]);
 }
 
-export async function getMessage(id: string) {
+export async function getMessage(id: string): Promise<FormattedMessage | null> {
     const msg = await db.get<DBMessage | undefined>("SELECT * FROM messages WHERE id = ?", id);
     if (!msg) {
         return null;
@@ -66,13 +67,13 @@ export async function getMessage(id: string) {
 
     return {
         // for legacy we supply filename as the id for comparisons
-        attachments: !msg.attachments.startsWith("[") ? msg.attachments.split("$").filter(Boolean).map(attachment => ({ url: "ignore", filename: attachment, id: attachment })) : JSON.parse(msg.attachments) as Array<JSONAttachment>,
+        attachments: msg.attachments.startsWith("[") ? JSON.parse(msg.attachments) as Array<JSONAttachment> : msg.attachments.split("$").filter(Boolean).map(attachment => ({ url: "ignore", filename: attachment, id: attachment })),
         authorID:    msg.author_id,
         authorName:  msg.author_name,
         channelID:   msg.channel_id,
         content:     msg.content,
         id:          msg.id,
-        stickers:    !msg.stickers.startsWith("[") ? msg.stickers.split("$").filter(Boolean).map(sticker => ({ id: sticker.split(":")[1] ?? "0", name: sticker.split(":")[0] })) : JSON.parse(msg.stickers) as Array<StickerItem>
+        stickers:    msg.stickers.startsWith("[") ? JSON.parse(msg.stickers) as Array<StickerItem> : msg.stickers.split("$").filter(Boolean).map(sticker => ({ id: sticker.split(":")[1] ?? "0", name: sticker.split(":")[0] }))
     };
 }
 

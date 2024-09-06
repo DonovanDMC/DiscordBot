@@ -3,14 +3,13 @@ import { handleLinks } from "../util/handleLinks.js";
 import { saveMessage } from "../db.js";
 import { formatTime } from "../util/util.js";
 import config from "../config.js";
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Constants } from "oceanic.js";
 import Redis, { getKeys } from "../Redis.js";
-import { isDev } from "../util/util.js";
 import * as db from "../db.js";
 import * as util from "../util/util.js";
 import * as dtext from "../util/dtext.js";
 import * as phrases from "../phrases.js";
-import { inspect } from "util";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Constants } from "oceanic.js";
+import { inspect } from "node:util";
 
 const evalVariables: Record<string, unknown> = {
     config,
@@ -22,7 +21,7 @@ const evalVariables: Record<string, unknown> = {
     phrases
 };
 
-async function format(obj: unknown) {
+async function format(obj: unknown): Promise<string> {
     if (obj instanceof Promise) {
         obj = await obj;
     }
@@ -41,12 +40,12 @@ export default new ClientEvent("messageCreate", async function(msg) {
         await saveMessage(msg);
         await handleLinks(msg);
 
-        if (isDev(msg)) {
+        if (util.isDev(msg)) {
             const [command, ...args] = msg.content.split(" ");
             switch (command) {
                 case "!commands": {
                     const commands = await this.application.getGlobalCommands();
-                    const chatInput: string[] = [], user: string[] = [], message: string[] = [], local: string[] = [];
+                    const chatInput: Array<string> = [], user: Array<string> = [], message: Array<string> = [], local: Array<string> = [];
                     for (const cmd of commands) {
                         switch (cmd.type) {
                             case ApplicationCommandTypes.CHAT_INPUT: {
@@ -64,7 +63,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
                                         }
                                     }
                                 } else {
-                                    chatInput.push(`  * ${cmd.mention()}`)
+                                    chatInput.push(`  * ${cmd.mention()}`);
                                 }
                                 break;
                             }
@@ -92,11 +91,11 @@ export default new ClientEvent("messageCreate", async function(msg) {
                 case "!reset-ticket-cooldowns": {
                     const user = (args[0] || "*").replace(/<@!?(\d+)>/, "$1");
                     const keys = await getKeys(`ticket-timeout:${user}`);
-                    if (keys.length > 0) {
-                        await Redis.del(...keys);
-                        return msg.channel.createMessage({ content: `Reset ${keys.length} cooldowns for ${user}`});
+                    if (keys.length === 0) {
+                        return msg.channel.createMessage({ content: `No active cooldowns found for ${user}` });
                     } else {
-                        return msg.channel.createMessage({ content: `No active cooldowns found for ${user}`});
+                        await Redis.del(...keys);
+                        return msg.channel.createMessage({ content: `Reset ${keys.length} cooldowns for ${user}` });
                     }
                 }
 
@@ -113,7 +112,7 @@ export default new ClientEvent("messageCreate", async function(msg) {
                     }
                     const input = args.join(" ");
                     const start = process.hrtime.bigint();
-                    let res: unknown
+                    let res: unknown;
                     try {
                     // eslint-disable-next-line no-eval
                         res = await eval(`(async()=>{${input.includes("return") ? "" : "return "}${input}})()`);
@@ -135,15 +134,15 @@ export default new ClientEvent("messageCreate", async function(msg) {
                     return msg.channel.createMessage({
                         embeds: [
                             {
-                                title: `Time Taken: ${time}`,
-                                color: res instanceof Error ? 0xDC143C : 0x008000,
+                                title:  `Time Taken: ${time}`,
+                                color:  res instanceof Error ? 0xDC143C : 0x008000,
                                 fields: [
                                     {
-                                        name: ":inbox_tray: Input",
+                                        name:  ":inbox_tray: Input",
                                         value: `\`\`\`js\n${input.slice(0, 750)}\n\`\`\``
                                     },
                                     {
-                                        name: ":outbox_tray: Output",
+                                        name:  ":outbox_tray: Output",
                                         value: `\`\`\`js\n${formatted}\n\`\`\``
                                     }
                                 ]
@@ -152,11 +151,11 @@ export default new ClientEvent("messageCreate", async function(msg) {
                         files: file ? [
                             {
                                 contents: Buffer.from(file),
-                                name: "output.txt",
+                                name:     "output.txt"
                             }
                         ] : [
                         ]
-                    })
+                    });
                 }
 
             }

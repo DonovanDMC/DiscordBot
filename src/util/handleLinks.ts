@@ -9,7 +9,7 @@ import {
 import config from "../config.js";
 import { type AnyTextableGuildChannel, type Message, MessageFlags } from "oceanic.js";
 
-export async function handleLinks(msg: Message<AnyTextableGuildChannel>) {
+export async function handleLinks(msg: Message<AnyTextableGuildChannel>): Promise<void> {
     let text = "";
     const idMatches = msg.content.matchAll(postIDRegex);
     for (const [,value] of idMatches) {

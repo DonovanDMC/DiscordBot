@@ -18,24 +18,24 @@ export interface TicketData {
     user: string;
     user_id: number;
 }
-export async function ticketUpdate(data: TicketActionData) {
+export async function ticketUpdate(data: TicketActionData): Promise<void> {
     const color = data.ticket.claimant === null ? 0xFF0000 : 0x00FFFF;
     const claimant = data.ticket.claimant || "<Unclaimed>";
     const offender = ({
-        Artist:    () => `Artist ${data.ticket.target}`,
-        Comment:   () => `Comment by ${data.ticket.target}`,
-        Dmail:     () => `DMail sent by ${data.ticket.target}`,
-        Forum:     () => `Forum post by ${data.ticket.target}`,
-        ForumPost: () => `Forum post by ${data.ticket.target}`,
-        Pool:      () => `Pool ${data.ticket.target}`,
-        Post:      () => `Post uploaded by ${data.ticket.target}`,
-        Set:       () => `Set ${data.ticket.target}`,
-        PostSet:   () => `Set ${data.ticket.target}`,
-        Tag:       () => `Tag ${data.ticket.target}`,
-        User:      () => `User ${data.ticket.target}`,
-        Wiki:      () => `Wiki page ${data.ticket.target}`,
-        WikiPage:  () => `Wiki page ${data.ticket.target}`
-    }[data.ticket.category] || (() => `${data.ticket.category} report by ${data.ticket.user}`))();
+        Artist:    (): string => `Artist ${data.ticket.target}`,
+        Comment:   (): string => `Comment by ${data.ticket.target}`,
+        Dmail:     (): string => `DMail sent by ${data.ticket.target}`,
+        Forum:     (): string => `Forum post by ${data.ticket.target}`,
+        ForumPost: (): string => `Forum post by ${data.ticket.target}`,
+        Pool:      (): string => `Pool ${data.ticket.target}`,
+        Post:      (): string => `Post uploaded by ${data.ticket.target}`,
+        Set:       (): string => `Set ${data.ticket.target}`,
+        PostSet:   (): string => `Set ${data.ticket.target}`,
+        Tag:       (): string => `Tag ${data.ticket.target}`,
+        User:      (): string => `User ${data.ticket.target}`,
+        Wiki:      (): string => `Wiki page ${data.ticket.target}`,
+        WikiPage:  (): string => `Wiki page ${data.ticket.target}`
+    }[data.ticket.category] || ((): string => `${data.ticket.category} report by ${data.ticket.user}`))();
     const embed = {
         url:         `${config.baseURL}/tickets/${data.ticket.id}`,
         title:       offender,

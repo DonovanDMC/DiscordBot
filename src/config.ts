@@ -16,7 +16,7 @@ const config = {
     roles:   {
         member:            env("MEMBER_ROLE_ID", true),
         privateHelpHelper: env("PRIVATE_HELP_HELPER_ROLE_ID", true),
-        staff:             env("STAFF_ROLE_ID", true),
+        staff:             env("STAFF_ROLE_ID", true)
     },
     channels: {
         auditLog:  env("AUDIT_LOG_CHANNEL_ID", true),
@@ -24,7 +24,7 @@ const config = {
         general:   env("GENERAL_CHANNEL_ID", true),
         newMember: env("NEW_MEMBER_CHANNEL_ID", true),
         ticket:    env("TICKET_CHANNEL_ID", true),
-        voiceLog:  env("VOICE_LOG_CHANNEL_ID", true),
+        voiceLog:  env("VOICE_LOG_CHANNEL_ID", true)
     },
     baseURL:                env("BASE_URL", true),
     fetchURL:               env("FETCH_URL", true),
@@ -35,6 +35,6 @@ const config = {
     safeChannels:           env("SAFE_CHANNELS")?.split(",") || [],
     phraseRoles:            env("PHRASE_ROLES")?.split(",") || [],
     developerUserIDs:       env("DEVELOPER_USER_IDS")?.split(",") || [],
-    development:            env("NODE_ENV") === "development",
+    development:            env("NODE_ENV") === "development"
 };
 export default config;

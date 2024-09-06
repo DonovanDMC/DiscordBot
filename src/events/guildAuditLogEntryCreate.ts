@@ -8,6 +8,7 @@ import {
     type AuditLogEntry,
     type AuditLogEntryOptions,
     DiscordRESTError,
+    type EmbedOptions,
     JSONErrorCodes,
     OverwriteTypes,
     Permission,
@@ -16,7 +17,6 @@ import {
     RoleFlags,
     type StandardAuditLogChange
 } from "oceanic.js";
-import { EmbedBuilder } from "@oceanicjs/builders";
 import assert from "node:assert";
 
 export default new ClientEvent("guildAuditLogEntryCreate", async function(guild, entry) {
@@ -24,43 +24,61 @@ export default new ClientEvent("guildAuditLogEntryCreate", async function(guild,
         return;
     }
 
-    const embed = new EmbedBuilder()
-        .addField("Actor", `<@${entry.userID!}>`, true)
-        .setTitle(ucwords(AuditLogActionTypes[entry.actionType].replaceAll("_", " ").toLowerCase()));
+    const embed: EmbedOptions = {
+        title:  ucwords(AuditLogActionTypes[entry.actionType].replaceAll("_", " ").toLowerCase()),
+        fields: [{
+            name:   "Actor",
+            value:  `<@${entry.userID!}>`,
+            inline: true
+        }]
+    };
 
     if (entry.targetID !== null) {
-        embed.addField("Target", formatTarget(entry.actionType, entry.targetID), true);
+        embed.fields!.push({
+            name:   "Target",
+            value:  formatTarget(entry.actionType, entry.targetID),
+            inline: true
+        });
     }
 
     if (entry.reason !== undefined) {
-        embed.addField("Reason", entry.reason, true);
+        embed.fields!.push({
+            name:   "Reason",
+            value:  entry.reason,
+            inline: true
+        });
     }
 
     if (entry.changes !== undefined && entry.changes.length !== 0) {
-        embed.addField("Changes", formatChanges(entry.changes));
+        embed.fields!.push({
+            name:  "Changes",
+            value: formatChanges(entry.changes)
+        });
     }
 
     if (entry.options !== undefined) {
-        embed.addField("Options", formatOptions(entry.actionType, entry.options));
+        embed.fields!.push({
+            name:  "Options",
+            value: formatOptions(entry.actionType, entry.options)
+        });
     }
 
 
     await this.rest.channels.createMessage(config.channels.auditLog, {
-        embeds: embed.toJSON(true)
+        embeds: [embed]
     })
         .catch(async err => {
             // if the message failed to send because it was too large, attempt to send it again but as an attached text file
             if (err instanceof DiscordRESTError && err.code === JSONErrorCodes.INVALID_FORM_BODY) {
-                const e = embed.toJSON();
                 let full = "";
-                for (const field of e.fields!) {
+                for (const field of embed.fields!) {
                     if (!["Actor", "Target", "Reason"].includes(field.name)) {
-                        e.fields!.splice(e.fields!.indexOf(field), 1);
+                        embed.fields!.splice(embed.fields!.indexOf(field), 1);
                         full += `==${field.name}==\n${field.value}\n\n`;
                     }
 
                     await this.rest.channels.createMessage(config.channels.auditLog, {
-                        embeds: [e],
+                        embeds: [embed],
                         files:  full === "" ? [] : [
                             {
                                 name:     "auditlog.txt",
@@ -73,7 +91,7 @@ export default new ClientEvent("guildAuditLogEntryCreate", async function(guild,
         });
 });
 
-function formatTarget(action: AuditLogActionTypes, target: string) {
+function formatTarget(action: AuditLogActionTypes, target: string): string {
     switch (action) {
         case AuditLogActionTypes.MEMBER_UPDATE:
         case AuditLogActionTypes.MEMBER_KICK:
@@ -114,7 +132,7 @@ const IgnoredActions = new Set([
 ]);
 
 // determine if we should log an audit log entry
-function shouldLog(client: DiscordBot, entry: AuditLogEntry) {
+function shouldLog(client: DiscordBot, entry: AuditLogEntry): boolean {
     // if the entry has no blamed user, ignore it
     if (entry.userID === null) {
         return true;
@@ -133,7 +151,7 @@ function shouldLog(client: DiscordBot, entry: AuditLogEntry) {
     return true;
 }
 
-function formatChanges(changes: Array<AuditLogChange>) {
+function formatChanges(changes: Array<AuditLogChange>): string {
     let result = "";
     for (const change of changes) {
         const fmt = formatChange(change);
@@ -145,7 +163,7 @@ function formatChanges(changes: Array<AuditLogChange>) {
     return result.slice(0, -1);
 }
 
-function formatChange(change: AuditLogChange) {
+function formatChange(change: AuditLogChange): string {
     if (["$add", "$remove"].includes(change.key)) {
         return formatMemberRoleChange(change as RoleAuditLogChange);
     }
@@ -172,7 +190,7 @@ function formatChange(change: AuditLogChange) {
     }
 }
 
-function formatMemberRoleChange(change: RoleAuditLogChange) {
+function formatMemberRoleChange(change: RoleAuditLogChange): string {
     let result = "";
     for (const { id: role } of change.new_value) {
         if (change.key === "$add") {
@@ -185,7 +203,7 @@ function formatMemberRoleChange(change: RoleAuditLogChange) {
     return result.slice(0, -1);
 }
 
-function formatTimeoutChange(change: StandardAuditLogChange) {
+function formatTimeoutChange(change: StandardAuditLogChange): string {
     // old value will be null if the timeout has been removed
     if ("old_value" in change) {
         return "Timeout removed";
@@ -195,7 +213,7 @@ function formatTimeoutChange(change: StandardAuditLogChange) {
     }
 }
 
-function formatPermissionOrOverwrites(key: string, oldPermissions: Permission, newPermissions: Permission) {
+function formatPermissionOrOverwrites(key: string, oldPermissions: Permission, newPermissions: Permission): string {
     switch (key) {
         // role
         case "permissions": return formatPermissionChange(oldPermissions, newPermissions, "Removed", "Added");
@@ -206,7 +224,7 @@ function formatPermissionOrOverwrites(key: string, oldPermissions: Permission, n
     }
 }
 
-function formatPermissionChange(oldPermissions: Permission, newPermissions: Permission, oldDescription: string, newDescription: string) {
+function formatPermissionChange(oldPermissions: Permission, newPermissions: Permission, oldDescription: string, newDescription: string): string {
     const added: Array<PermissionName> = [],
         removed: Array<PermissionName> = [],
         oldPermNames = Object.entries(oldPermissions.json).filter(([,v]) => v).map(([v]) => v) as Array<PermissionName>,
@@ -238,7 +256,7 @@ function formatPermissionChange(oldPermissions: Permission, newPermissions: Perm
 }
 
 // we ignore roles which are in boarding
-function shouldLogRoleChanges(client: DiscordBot, changes: Array<RoleAuditLogChange>) {
+function shouldLogRoleChanges(client: DiscordBot, changes: Array<RoleAuditLogChange>): boolean {
     const changedRoleIDs = changes.flatMap(r => r.new_value.map(v => v.id));
     for (const id of changedRoleIDs) {
         const role = client.guilds.get(config.guildID)?.roles.get(id);
@@ -251,7 +269,7 @@ function shouldLogRoleChanges(client: DiscordBot, changes: Array<RoleAuditLogCha
     return false;
 }
 
-function formatOptions(action: AuditLogActionTypes, options: AuditLogEntryOptions) {
+function formatOptions(action: AuditLogActionTypes, options: AuditLogEntryOptions): string {
     if ([AuditLogActionTypes.MESSAGE_PIN, AuditLogActionTypes.MESSAGE_UNPIN].includes(action)) {
         return formatMessagePin(options.channelID!, options.messageID!);
     }
@@ -275,11 +293,11 @@ function formatOptions(action: AuditLogActionTypes, options: AuditLogEntryOption
     return result.slice(0, -1);
 }
 
-function formatMessagePin(channelID: string, messageID: string) {
+function formatMessagePin(channelID: string, messageID: string): string {
     return `message: ${formatJumpLink(config.guildID, channelID, messageID)}`;
 }
 
-function formatChannelOverwrite(id: string, targetType: `${OverwriteTypes}`) {
+function formatChannelOverwrite(id: string, targetType: `${OverwriteTypes}`): string {
     switch (targetType) {
         case `${OverwriteTypes.ROLE}`: return `<@&${id}>`;
         case `${OverwriteTypes.MEMBER}`: return `<@${id}>`;

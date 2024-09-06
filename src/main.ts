@@ -1,7 +1,7 @@
 import "dotenv/config.js";
 import "source-map-support/register.js";
 import DiscordBot from "./client.js";
-import Logger from "@uwu-codes/logger";
+import Logger from "./Logger.js";
 
 const bot = new DiscordBot();
 await bot.connect();

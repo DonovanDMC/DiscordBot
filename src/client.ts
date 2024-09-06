@@ -29,12 +29,12 @@ export default class DiscordBot extends Client {
         return this.INSTANCE;
     }
 
-    override async connect() {
+    override async connect(): Promise<void> {
         await this.registerEvents();
         await super.connect();
     }
 
-    async registerEvents() {
+    async registerEvents(): Promise<void> {
         const dir = new URL("events", import.meta.url).pathname;
         const events = (await readdir(dir, { withFileTypes: true })).filter(ev => ev.isFile()).map(ev => `${dir}/${ev.name}`);
         for (const event of events) {

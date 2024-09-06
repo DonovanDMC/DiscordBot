@@ -4,7 +4,8 @@ import { addPhrase, getAllPhrases, getPhrasesFor, removePhrase } from "../phrase
 import { checkStaff, idToName, normalizeName } from "../util/util.js";
 import { getAll } from "../util/userFetcher.js";
 import Redis from "../Redis.js";
-import Logger from "@uwu-codes/logger";
+import Logger from "../Logger.js";
+import { channelsToRename } from "../commands.js";
 import {
     ComponentTypes,
     type AutocompleteInteraction,
@@ -24,7 +25,6 @@ import {
     ButtonStyles,
     RateLimitedError
 } from "oceanic.js";
-import { channelsToRename } from "../commands.js";
 
 export default new ClientEvent("interactionCreate", async function(interaction) {
     if (interaction.isCommandInteraction() && interaction.isChatInputCommand() && interaction.inPrivateChannel()) {
@@ -73,9 +73,10 @@ export default new ClientEvent("interactionCreate", async function(interaction) 
 
 type ChatInputApplicationCommandInteraction<T extends AnyInteractionChannel | Uncached = AnyInteractionChannel | Uncached> =  CommandInteraction<T, ApplicationCommandTypes.CHAT_INPUT>;
 
-async function phrasesCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>) {
+async function phrasesCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>): Promise<void> {
     if (!checkStaff(interaction)) {
-        return interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+        return;
     }
 
     const [subcommand, subcommandGroup] = interaction.data.options.getSubCommand(true);
@@ -84,7 +85,8 @@ async function phrasesCommand(interaction: ChatInputApplicationCommandInteractio
         case "role": {
             const role = interaction.data.options.getString("role", true);
             if (!config.phraseRoles.includes(role)) {
-                return interaction.reply({ content: "I couldn't find that role." });
+                await interaction.reply({ content: "I couldn't find that role." });
+                return;
             }
             switch (subcommandGroup) {
                 case "add": {
@@ -129,37 +131,37 @@ async function phrasesCommand(interaction: ChatInputApplicationCommandInteractio
     }
 }
 
-async function addPhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string) {
+async function addPhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string): Promise<void> {
     await addPhrase(mention, phrase);
     const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))) || null;
     if (role) {
-        return interaction.reply({
-            content: `The phrase "${phrase}" has been added to the <@&${role}> notification list.`,
+        await interaction.reply({
+            content:         `The phrase "${phrase}" has been added to the <@&${role}> notification list.`,
             allowedMentions: {
                 roles: false
             }
         });
     } else {
-        return interaction.reply({ content: `The phrase "${phrase}" has been added to your notification list.` });
+        await interaction.reply({ content: `The phrase "${phrase}" has been added to your notification list.` });
     }
 }
 
-async function removePhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string) {
+async function removePhraseCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, mention: string, phrase: string): Promise<void> {
     await removePhrase(mention, phrase);
     const role = (mention.startsWith("&") && config.phraseRoles.find(id => id === mention.slice(1))) || null;
     if (role) {
-        return interaction.reply({
-            content: `The phrase "${phrase}" has been removed from the <@&${role}> notification list.`,
+        await interaction.reply({
+            content:         `The phrase "${phrase}" has been removed from the <@&${role}> notification list.`,
             allowedMentions: {
                 roles: false
             }
         });
     } else {
-        return interaction.reply({ content: `The phrase "${phrase}" has been removed from your notification list.` });
+        await interaction.reply({ content: `The phrase "${phrase}" has been removed from your notification list.` });
     }
 }
 
-async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, target?: string) {
+async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandInteraction<AnyTextableGuildChannel>, target?: string): Promise<void> {
     const phrases = target === undefined ? await getAllPhrases() : await getPhrasesFor(target);
     const texts: Array<string> = [];
     let text = "";
@@ -191,9 +193,10 @@ async function dumpPhrasesCommand(interaction: ChatInputApplicationCommandIntera
     }
 }
 
-async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChannel>) {
+async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChannel>): Promise<void> {
     if (!checkStaff(interaction)) {
-        return interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+        return;
     }
 
     const flags = interaction.channel.parentID === null || !config.staffCategories.includes(interaction.channel.parentID) ? MessageFlags.EPHEMERAL : 0;
@@ -205,10 +208,11 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
         id = interaction.data.options.getString("user", true).replace(/<@!?/, "").replace(">", "");
     } else {
         if (!(interaction.data.target instanceof User)) {
-            return interaction.reply({
+            await interaction.reply({
                 content: "Invalid user.",
                 flags
             });
+            return;
         }
         id = interaction.data.target.id;
     }
@@ -216,10 +220,11 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
     if (!/^\d+$/.test(id)) {
         const members = await interaction.guild.searchMembers({ query: id });
         if (members.length === 0) {
-            return interaction.reply({
+            await interaction.reply({
                 content: "I couldn't find that user.",
                 flags
             });
+            return;
         }
         id = members[0].id;
     }
@@ -227,10 +232,11 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
     if (id.length < 17) {
         id =  Number(id);
         if (isNaN(id)) {
-            return interaction.reply({
+            await interaction.reply({
                 content: "Invalid user.",
                 flags
             });
+            return;
         }
     }
 
@@ -238,10 +244,11 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
     const userNames = await idToName(...e6);
 
     if (discord.length === 0 && e6.length === 0) {
-        return interaction.reply({
+        await interaction.reply({
             content: "I couldn't find anyone with that ID.",
-                flags
+            flags
         });
+        return;
     }
 
     let text: string;
@@ -259,7 +266,7 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
         text += `•• <@${did}>\n`;
     }
 
-    return interaction.reply({
+    await interaction.reply({
         content:         text,
         allowedMentions: {
             everyone:    false,
@@ -271,9 +278,10 @@ async function whoisCommand(interaction: CommandInteraction<AnyTextableGuildChan
     });
 }
 
-async function renameCommand(interaction: CommandInteraction<AnyTextableGuildChannel>) {
+async function renameCommand(interaction: CommandInteraction<AnyTextableGuildChannel>): Promise<void> {
     if (!checkStaff(interaction)) {
-        return interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "You don't have permission to use that.", flags: MessageFlags.EPHEMERAL });
+        return;
     }
 
     const flags = interaction.channel.parentID === null || !config.staffCategories.includes(interaction.channel.parentID) ? MessageFlags.EPHEMERAL : 0;
@@ -281,35 +289,37 @@ async function renameCommand(interaction: CommandInteraction<AnyTextableGuildCha
     const channelID = interaction.data.options.getString("channel", true);
     const name = interaction.data.options.getString("name", true);
     if (!channelsToRename.map(ch => ch[1]).includes(channelID)) {
-        return interaction.reply({
+        await interaction.reply({
             content: "I couldn't find that channel.",
             flags
         });
+        return;
     }
 
     try {
         await interaction.client.rest.channels.edit(channelID, { name, reason: `Command (${interaction.user.tag})` });
 
-        return interaction.reply({
+        await interaction.reply({
             content: `Renamed <#${channelID}> to ${name}.`,
             flags
         });
     } catch (err) {
         if (err instanceof RateLimitedError) {
             const retryAt = Math.floor((Date.now() + err.delay) / 1000);
-            return interaction.reply({
+            await interaction.reply({
                 content: `You're doing that too fast. Retry <t:${retryAt}:R>.`,
                 flags
             });
+            return;
         }
-        return interaction.reply({
-            content: `Something went wrong when renaming <#${channelID}>:\n\`\`\`\n${err}\n\`\`\``,
+        await interaction.reply({
+            content: `Something went wrong when renaming <#${channelID}>:\n\`\`\`\n${String(err)}\n\`\`\``,
             flags
         });
     }
 }
 
-async function syncCommand(interaction: CommandInteraction) {
+async function syncCommand(interaction: CommandInteraction): Promise<void> {
     let user_id = interaction.data.options.getNumber("user_id");
 
     const { e6 } = await getAll(interaction.user.id);
@@ -317,13 +327,14 @@ async function syncCommand(interaction: CommandInteraction) {
     user_id ??= e6[0];
 
     if (!user_id || !e6.includes(user_id)) {
-        return interaction.reply({
+        await interaction.reply({
             content: "I couldn't find that user.",
             flags:   MessageFlags.EPHEMERAL
         });
+        return;
     }
 
-    return interaction.client.rest.guilds.editMember(config.guildID, interaction.user.id, { nick: normalizeName(names[user_id]) })
+    await interaction.client.rest.guilds.editMember(config.guildID, interaction.user.id, { nick: normalizeName(names[user_id]) })
         .then(() => interaction.reply({
             content: "Your name has been synced.",
             flags:   MessageFlags.EPHEMERAL
@@ -336,7 +347,7 @@ async function syncCommand(interaction: CommandInteraction) {
         });
 }
 
-async function roleAutocomplete(interaction: AutocompleteInteraction<AnyTextableGuildChannel>) {
+async function roleAutocomplete(interaction: AutocompleteInteraction<AnyTextableGuildChannel>): Promise<void>{
     const roles = config.phraseRoles.map(id => interaction.guild.roles.get(id) ?? { id, name: id });
     return interaction.result(roles.map (r => ({
         name:  r.name,
@@ -353,10 +364,11 @@ async function roleAutocomplete(interaction: AutocompleteInteraction<AnyTextable
 // * [CHANNEL] - The id of the channel to send the message to
 // You can also change the color of the button by changing `style` to 2, 3, or 4.
 // See: https://discord.com/developers/docs/interactions/message-components#button-object-button-styles
-async function openTicketComponent(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
+async function openTicketComponent(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>): Promise<void> {
     const timeout = await Redis.get(`ticket-timeout:${interaction.user.id}`);
     if (timeout) {
-        return interaction.reply({ content: "You can only create one ticket per day.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "You can only create one ticket per day.", flags: MessageFlags.EPHEMERAL });
+        return;
     }
 
     return interaction.createModal({
@@ -382,10 +394,11 @@ async function openTicketComponent(interaction: ComponentInteraction<ComponentTy
     });
 }
 
-async function closeTicketComponent(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>) {
+async function closeTicketComponent(interaction: ComponentInteraction<ComponentTypes.BUTTON, AnyTextableGuildChannel>): Promise<void> {
     if (interaction.channel.type !== ChannelTypes.PRIVATE_THREAD) {
         Logger.getLogger("CloseTicket").warn("Attempted to close a ticket in a non-thread channel.");
-        return interaction.reply({ content: "Whoops. Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "Whoops. Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        return;
     }
 
     await interaction.defer(MessageFlags.EPHEMERAL);
@@ -397,7 +410,8 @@ async function closeTicketComponent(interaction: ComponentInteraction<ComponentT
     } catch (err) {
         Logger.getLogger("CloseTicket").error("Failed to create closing message for ticket:");
         Logger.getLogger("CloseTicket").error(err);
-        return interaction.reply({ content: "Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "Something went wrong. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        return;
     }
 
     await interaction.reply({ content: "Ticket closed.", flags: MessageFlags.EPHEMERAL });
@@ -406,12 +420,12 @@ async function closeTicketComponent(interaction: ComponentInteraction<ComponentT
     } catch (err) {
         Logger.getLogger("CloseTicket").error("Failed to close ticket:");
         Logger.getLogger("CloseTicket").error(err);
-        return interaction.reply({ content: "Something failed. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "Something failed. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
     }
 }
 
 
-async function submitTicketModal(interaction: ModalSubmitInteraction<AnyTextableGuildChannel>) {
+async function submitTicketModal(interaction: ModalSubmitInteraction<AnyTextableGuildChannel>): Promise<void> {
     await Redis.setex(`ticket-timeout:${interaction.user.id}`, 60 * 60 * 24, "1");
     await interaction.defer(MessageFlags.EPHEMERAL);
 
@@ -428,7 +442,8 @@ async function submitTicketModal(interaction: ModalSubmitInteraction<AnyTextable
         Logger.getLogger("SubmitTicket").error("Failed to create ticket thread:");
         Logger.getLogger("SubmitTicket").error(err);
         await Redis.del(`ticket-timeout:${interaction.user.id}`);
-        return interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        await interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+        return;
     }
 
     try {
@@ -458,9 +473,10 @@ async function submitTicketModal(interaction: ModalSubmitInteraction<AnyTextable
             Logger.getLogger("SubmitTicket").error("Failed to add user to thread:");
             Logger.getLogger("SubmitTicket").error(err2);
             await Redis.del(`ticket-timeout:${interaction.user.id}`);
-            return interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+            await interaction.reply({ content: "Failed to create a ticket. Please report this to a staff member.", flags: MessageFlags.EPHEMERAL });
+            return;
         }
     }
 
-    return interaction.reply({ content: `Your ticket has been created: ${channel.mention}`, flags: MessageFlags.EPHEMERAL });
+    await interaction.reply({ content: `Your ticket has been created: ${channel.mention}`, flags: MessageFlags.EPHEMERAL });
 }

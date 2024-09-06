@@ -1,6 +1,6 @@
 import config from "./config.js";
 import { type TicketActionData, ticketUpdate } from "./pubsub.js";
-import Logger from "@uwu-codes/logger";
+import Logger from "./Logger.js";
 import { Redis as IORedis } from "ioredis";
 
 const Redis = new IORedis(config.redis);

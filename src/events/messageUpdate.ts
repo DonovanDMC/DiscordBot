@@ -2,7 +2,7 @@ import ClientEvent from "../util/ClientEvent.js";
 import { handleLinks } from "../util/handleLinks.js";
 import config from "../config.js";
 import { formatMessage, getMessage, saveMessage } from "../db.js";
-import { EmbedBuilder } from "@oceanicjs/builders";
+import { type EmbedOptions } from "oceanic.js";
 
 export default new ClientEvent("messageUpdate", async function(msg, oldMessage) {
     if (!msg.guildID || msg.author.id === this.user.id) {
@@ -28,17 +28,37 @@ export default new ClientEvent("messageUpdate", async function(msg, oldMessage) 
             await handleLinks(msg);
         }
 
-        const embed = new EmbedBuilder()
-            .setTitle("Edited Message")
-            .setColor(0xFFFF00)
-            .setTimestamp(msg.createdAt)
-            .addField("Channel", `<#${msg.channelID}>`, true)
-            .addField("User", `<@${msg.author.id}>`, true)
-            .addField("Message", msg.jumpLink, true);
+        const embed: EmbedOptions = {
+            title:     "Edited Message",
+            color:     0xFFFF00,
+            timestamp: msg.createdAt.toISOString(),
+            fields:    [
+                {
+                    name:   "Channel",
+                    value:  `<#${msg.channelID}>`,
+                    inline: true
+                },
+                {
+                    name:   "User",
+                    value:  `<@${msg.author.id}>`,
+                    inline: true
+                },
+                {
+                    name:   "Message",
+                    value:  msg.jumpLink,
+                    inline: true
+                }
+            ]
+        };
 
         if (msg.content !== old.content) {
-            embed.addField("Before", old.content.slice(0, 2000));
-            embed.addField("After", msg.content.slice(0, 2000));
+            embed.fields!.push({
+                name:  "Before",
+                value: old.content.slice(0, 2000)
+            }, {
+                name:  "After",
+                value: msg.content.slice(0, 2000)
+            });
         }
 
         const addedAttachments = msg.attachments.toArray().filter(a => !old.attachments.some(att => att.id === a.id));
@@ -46,16 +66,22 @@ export default new ClientEvent("messageUpdate", async function(msg, oldMessage) 
 
         if (addedAttachments.length !== 0) {
         // legacy attachments which didn't save their url will have the url set to "ignore"
-            embed.addField("Added Attachments", addedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
+            embed.fields!.push({
+                name:  "Added Attachments",
+                value: addedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", ")
+            });
         }
 
         if (removedAttachments.length !== 0) {
         // legacy attachments which didn't save their url will have the url set to "ignore"
-            embed.addField("Removed Attachments", removedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", "));
+            embed.fields!.push({
+                name:  "Removed Attachments",
+                value: removedAttachments.map(a => a.url === "ignore" ? a.filename : `[${a.filename}](${a.url})`).join(", ")
+            });
         }
 
         await this.rest.channels.createMessage(config.channels.event, {
-            embeds: embed.toJSON(true)
+            embeds: [embed]
         });
     } else {
         await saveMessage(msg);

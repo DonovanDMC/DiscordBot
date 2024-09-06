@@ -1,9 +1,15 @@
 import type DiscordBot from "./client.js";
 import config from "./config.js";
 import Redis from "./Redis.js";
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, ApplicationIntegrationTypes, CreateApplicationCommandOptions, InteractionContextTypes } from "oceanic.js";
+import {
+    ApplicationCommandOptionTypes,
+    ApplicationCommandTypes,
+    ApplicationIntegrationTypes,
+    type CreateApplicationCommandOptions,
+    InteractionContextTypes
+} from "oceanic.js";
 
-export default async function registerCommands(client: DiscordBot) {
+export default async function registerCommands(client: DiscordBot): Promise<void> {
     const cachedCommands = JSON.parse((await Redis.get("bot-commands")) || "[]") as Array<CreateApplicationCommandOptions>;
     if (JSON.stringify(cachedCommands) === JSON.stringify(commands)) {
         return;
@@ -15,7 +21,7 @@ export default async function registerCommands(client: DiscordBot) {
     }
 }
 
-export const channelsToRename = [["general", config.channels.general]]
+export const channelsToRename = [["general", config.channels.general]];
 const phraseMinLength = 2, phraseMaxLength = 32;
 const commands: Array<CreateApplicationCommandOptions> = [
     {
@@ -136,7 +142,7 @@ const commands: Array<CreateApplicationCommandOptions> = [
                 description: "List all registered phrases."
             }
         ],
-        contexts: [InteractionContextTypes.GUILD],
+        contexts:         [InteractionContextTypes.GUILD],
         integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     },
     {
@@ -151,7 +157,7 @@ const commands: Array<CreateApplicationCommandOptions> = [
                 required:    true
             }
         ],
-        contexts: [InteractionContextTypes.GUILD],
+        contexts:         [InteractionContextTypes.GUILD],
         integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     },
     {
@@ -171,16 +177,16 @@ const commands: Array<CreateApplicationCommandOptions> = [
                 name:        "name",
                 description: "The new name for the channel.",
                 required:    true,
-                maxLength: 100
+                maxLength:   100
             }
         ],
-        contexts: [InteractionContextTypes.GUILD],
+        contexts:         [InteractionContextTypes.GUILD],
         integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     },
     {
-        type: ApplicationCommandTypes.USER,
-        name: "Whois",
-        contexts: [InteractionContextTypes.GUILD],
+        type:             ApplicationCommandTypes.USER,
+        name:             "Whois",
+        contexts:         [InteractionContextTypes.GUILD],
         integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     },
     {
@@ -194,7 +200,7 @@ const commands: Array<CreateApplicationCommandOptions> = [
                 description: "If omitted, the first linked account will be used."
             }
         ],
-        contexts: [InteractionContextTypes.GUILD, InteractionContextTypes.BOT_DM],
+        contexts:         [InteractionContextTypes.GUILD, InteractionContextTypes.BOT_DM],
         integrationTypes: [ApplicationIntegrationTypes.GUILD_INSTALL]
     }
 ];
