@@ -101,6 +101,11 @@ export default new ClientEvent("messageCreate", async function(msg) {
                 }
 
                 case "!eval": {
+                    // prevent using eval command in production mode
+                    if (!config.development) {
+                        return;
+                    }
+
                     // eslint-disable-next-line guard-for-in
                     for (const k in evalVariables) {
                         // eslint-disable-next-line guard-for-in, @typescript-eslint/no-implied-eval, no-new-func -- typescript messes with variable names so we have to remake them

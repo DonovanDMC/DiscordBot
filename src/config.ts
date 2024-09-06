@@ -35,5 +35,6 @@ const config = {
     safeChannels:           env("SAFE_CHANNELS")?.split(",") || [],
     phraseRoles:            env("PHRASE_ROLES")?.split(",") || [],
     developerUserIDs:       env("DEVELOPER_USER_IDS")?.split(",") || [],
+    development:            env("NODE_ENV") === "development",
 };
 export default config;
